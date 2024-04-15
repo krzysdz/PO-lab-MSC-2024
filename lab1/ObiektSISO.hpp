@@ -1,8 +1,7 @@
 #pragma once
 
-class ObiektSISO
-{
+class ObiektSISO {
 public:
-	virtual double symuluj(double u) = 0;
-	virtual ~ObiektSISO() = default;
+    virtual double symuluj(double u) = 0;
+    virtual ~ObiektSISO() = default;
 };

@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clang-format.json
+
+BasedOnStyle: WebKit
+
+ColumnLimit: 100
+SpaceBeforeCpp11BracedList: false
+AlignAfterOpenBracket: Align
+PointerAlignment: Right

@@ -1,10 +1,8 @@
 #pragma once
 #include <concepts>
 
-template <std::floating_point T = double>
-class ObiektSISO
-{
+template <std::floating_point T = double> class ObiektSISO {
 public:
-	virtual T symuluj(T u) = 0;
-	virtual ~ObiektSISO() = default;
+    virtual T symuluj(T u) = 0;
+    virtual ~ObiektSISO() = default;
 };
