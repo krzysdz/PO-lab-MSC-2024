@@ -4,7 +4,9 @@
 #include <iomanip>
 #include "ModelARX.h"
 
+#ifndef MAIN
 #define DEBUG  // ustaw na MAIN aby skompilować program docelowy / ustaw na DEBUG aby skompilować program testujacy
+#endif
 
 #ifdef DEBUG
 
@@ -194,7 +196,7 @@ int main()
 
 int main()
 {
-	//Twój program
+	Testy_ModelARX::run_tests();
 }
 
 #endif
