@@ -35,3 +35,6 @@
 *.pdb
 
 .vscode/
+
+# Executables (no extension, manual list)
+lab1
