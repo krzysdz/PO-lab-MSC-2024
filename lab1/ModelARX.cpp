@@ -1,12 +1,79 @@
 #include "ModelARX.h"
 #include <cmath>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <version>
+#if __cpp_lib_format >= 201907L
+#include <format>
+#endif
+
+double ModelARX::get_random()
+{
+    const auto r = m_distribution(m_mt);
+    m_n_generated++;
+    return r;
+}
+
+template <typename Iter>
+    requires std::contiguous_iterator<Iter>
+    && std::is_same_v<typename std::iterator_traits<Iter>::value_type, uint8_t>
+ModelARX::ModelARX(Iter start, Iter end)
+{
+    const auto data_size{ std::distance(start, end) };
+    if (data_size < static_cast<std::ptrdiff_t>(sizeof(raw_data_t)))
+        throw std::runtime_error{ "Data size is smaller than constant-length part" };
+
+    const auto raw_data_p = reinterpret_cast<const raw_data_t *>(&*start);
+    const auto expected_size{ static_cast<std::ptrdiff_t>(
+        (raw_data_p->n_coeff_a + raw_data_p->n_coeff_b + raw_data_p->in_n + raw_data_p->out_n
+         + raw_data_p->delay_n)
+            * 8
+        + sizeof(raw_data_t)) };
+    if (data_size != expected_size)
+        throw std::runtime_error{
+#if __cpp_lib_format >= 201907L
+            std::format("Data size ({} bytes) does not match the expected size ({} bytes)",
+                        data_size, expected_size)
+#else
+            "Data size does not match the expected size"
+#endif
+        };
+
+    auto vec_start = reinterpret_cast<const double *>(&*start + sizeof(raw_data_t));
+    auto vec_end = vec_start + raw_data_p->n_coeff_a;
+    m_coeff_a = std::vector<double>(vec_start, vec_end);
+    vec_start = vec_end;
+    vec_end += raw_data_p->n_coeff_b;
+    m_coeff_b = std::vector<double>(vec_start, vec_end);
+    vec_start = vec_end;
+    vec_end += raw_data_p->in_n;
+    m_in_signal_mem = decltype(m_in_signal_mem)(vec_start, vec_end);
+    vec_start = vec_end;
+    vec_end += raw_data_p->out_n;
+    m_out_signal_mem = decltype(m_out_signal_mem)(vec_start, vec_end);
+    vec_start = vec_end;
+    vec_end += raw_data_p->delay_n;
+    m_delay_mem = decltype(m_delay_mem)(vec_start, vec_end);
+
+    m_transport_delay = static_cast<uint32_t>(raw_data_p->delay_n);
+    m_init_seed = raw_data_p->init_seed;
+    // Restore generator state by initializing it with original seed and skipping the same number of
+    // results. It may be inefficient, but the STL implementation of Mersenne Twister does not
+    // expose the internal state and I don't want to use implementation-specific solutions, which
+    // could break in other versions of libstdc++, libc++ and MSVC STL.
+    // m_mt.discard(m_n_generated) won't work, because the distribution has its own state...
+    m_mt = std::mt19937_64{ static_cast<decltype(m_mt)::result_type>(m_init_seed) };
+    m_distribution = decltype(m_distribution)(raw_data_p->dist_mean, raw_data_p->dist_stddev);
+    while (m_n_generated < raw_data_p->n_generated)
+        get_random();
+}
 
 ModelARX::ModelARX(std::vector<double> &&coeff_a, std::vector<double> &&coeff_b,
                    const int32_t delay, const double stddev)
-    : m_mt{ std::random_device{}() }
+    : m_init_seed{ std::random_device{}() }
+    , m_mt{ static_cast<decltype(m_mt)::result_type>(m_init_seed) }
 {
     set_coeff_a(std::move(coeff_a));
     set_coeff_b(std::move(coeff_b));
@@ -31,7 +98,7 @@ void ModelARX::set_coeff_b(std::vector<double> &&coefficients) noexcept
 void ModelARX::set_transport_delay(const int32_t delay)
 {
     if (delay < 0)
-        throw std::runtime_error("Delay must be >= 0");
+        throw std::runtime_error{ "Delay must be >= 0" };
     m_transport_delay = static_cast<uint32_t>(delay);
     m_delay_mem.resize(m_transport_delay);
 }
@@ -54,11 +121,58 @@ double ModelARX::symuluj(double u)
                                           m_in_signal_mem.begin(), 0.0) };
     const auto a_poly{ std::inner_product(m_coeff_a.begin(), m_coeff_a.end(),
                                           m_out_signal_mem.begin(), 0.0) };
-    const double noise{ m_distribution(m_mt) };
+    const double noise{ get_random() };
     const auto y{ b_poly - a_poly + noise };
     m_out_signal_mem.pop_back();
     m_out_signal_mem.push_front(y);
     return y;
+}
+
+std::vector<uint8_t> ModelARX::dump() const
+{
+    const uint64_t n_coeff_a{ m_coeff_a.size() };
+    const uint64_t n_coeff_b{ m_coeff_b.size() };
+    const uint64_t in_n{ m_in_signal_mem.size() };
+    const uint64_t out_n{ m_out_signal_mem.size() };
+    const uint64_t delay_n{ m_delay_mem.size() };
+    const double dist_mean{ m_distribution.mean() };
+    const double dist_stddev{ m_distribution.stddev() };
+    // It's easier to deal with a whole struct instead of separate variables
+    const raw_data_t raw{ n_coeff_a, n_coeff_b, dist_mean,   dist_stddev,  in_n,
+                          out_n,     delay_n,   m_init_seed, m_n_generated };
+    // Prepare the output buffer and check some assumptions about its size
+    std::size_t dump_size{ (n_coeff_a + n_coeff_b + in_n + out_n + delay_n) * 8 + sizeof(raw) };
+    static_assert(sizeof(raw) == 9U * 8U);
+    static_assert(sizeof(double) == 8U);
+    std::vector<uint8_t> serialized(dump_size);
+    // Write everything to the buffer
+    auto out_ptr{ serialized.data() };
+    std::memcpy(out_ptr, reinterpret_cast<const uint8_t *>(&raw), sizeof(raw));
+    out_ptr += sizeof(raw);
+    std::memcpy(out_ptr, reinterpret_cast<const uint8_t *>(m_coeff_a.data()), n_coeff_a * 8);
+    out_ptr += n_coeff_a * 8;
+    std::memcpy(out_ptr, reinterpret_cast<const uint8_t *>(m_coeff_b.data()), n_coeff_b * 8);
+    out_ptr += n_coeff_b * 8;
+    std::copy(m_in_signal_mem.begin(), m_in_signal_mem.end(), reinterpret_cast<double *>(out_ptr));
+    out_ptr += in_n * 8;
+    std::copy(m_out_signal_mem.begin(), m_out_signal_mem.end(),
+              reinterpret_cast<double *>(out_ptr));
+    out_ptr += out_n * 8;
+    std::copy(m_delay_mem.begin(), m_delay_mem.end(), reinterpret_cast<double *>(out_ptr));
+    out_ptr += delay_n * 8;
+    // Final size check
+    if (out_ptr != std::to_address(serialized.end()))
+        throw std::runtime_error{ "Serialization is broken" };
+
+    return serialized;
+}
+
+bool ModelARX::operator==(const ModelARX &b) const noexcept
+{
+    return m_init_seed == b.m_init_seed && m_n_generated == b.m_n_generated && m_mt == b.m_mt
+        && m_distribution == b.m_distribution && m_coeff_a == b.m_coeff_a
+        && m_coeff_b == b.m_coeff_b && m_delay_mem == b.m_delay_mem
+        && m_in_signal_mem == b.m_in_signal_mem && m_out_signal_mem == b.m_out_signal_mem;
 }
 
 void Testy_ModelARX::raportBleduSekwencji(std::vector<double> &spodz, std::vector<double> &fakt)
@@ -224,6 +338,31 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_3()
     }
 }
 
+void Testy_ModelARX::test_dump()
+{
+    ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0.08);
+    std::vector<double> x{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 };
+    for (const auto i : std::initializer_list<double>{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 }) {
+        xx.symuluj(i);
+    }
+    const auto dump = xx.dump();
+    ModelARX restored{ dump };
+    if (xx != restored)
+        throw std::logic_error{ "Restored model does not compare equal" };
+    for (const auto i : std::initializer_list<double>{ 0.3, -0.2, -0.1, 0, -0.3, -0, 0.1, 0.15 }) {
+        if (xx.symuluj(i) != restored.symuluj(i))
+            throw std::logic_error{ "Restored model behaves differently" };
+    }
+    if (xx.dump() != restored.dump())
+        throw std::logic_error{ "Dumps do not compare equal" };
+    try {
+        [[maybe_unused]] const auto _ = ModelARX{ dump.cbegin(), std::prev(dump.cend()) };
+        throw std::logic_error{ "Model can be restored from a buffer that is too short" };
+    } catch (const std::runtime_error &e) {
+    }
+    std::cerr << "Model can be serialized and deserialized correctly\n";
+}
+
 void Testy_ModelARX::run_tests()
 {
     test_ModelARX_brakPobudzenia();
@@ -232,4 +371,5 @@ void Testy_ModelARX::run_tests()
     test_ModelARX_skokJednostkowy_3();
     ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0);
     std::cout << "delay: " << xx.m_transport_delay << " - just proving we're friends\n";
+    test_dump();
 }
