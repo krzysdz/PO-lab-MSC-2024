@@ -57,9 +57,10 @@ public:
     /// with different endianness
     /// @return Byte buffer containing all data necessary to restore the object
     std::vector<uint8_t> dump() const;
-    bool operator==(const ModelARX &b) const noexcept;
     ~ModelARX() = default;
 
+    friend bool operator==(const ModelARX &, const ModelARX &) = default;
+    friend bool operator!=(const ModelARX &, const ModelARX &) = default;
     friend class Testy_ModelARX;
 };
 
