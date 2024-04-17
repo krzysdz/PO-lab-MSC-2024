@@ -172,7 +172,8 @@ bool ModelARX::operator==(const ModelARX &b) const noexcept
     return m_init_seed == b.m_init_seed && m_n_generated == b.m_n_generated && m_mt == b.m_mt
         && m_distribution == b.m_distribution && m_coeff_a == b.m_coeff_a
         && m_coeff_b == b.m_coeff_b && m_delay_mem == b.m_delay_mem
-        && m_in_signal_mem == b.m_in_signal_mem && m_out_signal_mem == b.m_out_signal_mem;
+        && m_in_signal_mem == b.m_in_signal_mem && m_out_signal_mem == b.m_out_signal_mem
+        && m_transport_delay == b.m_transport_delay;
 }
 
 void Testy_ModelARX::raportBleduSekwencji(std::vector<double> &spodz, std::vector<double> &fakt)
