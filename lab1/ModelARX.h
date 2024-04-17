@@ -57,7 +57,6 @@ public:
     /// with different endianness
     /// @return Byte buffer containing all data necessary to restore the object
     std::vector<uint8_t> dump() const;
-    ~ModelARX() = default;
 
     friend bool operator==(const ModelARX &, const ModelARX &) = default;
     friend bool operator!=(const ModelARX &, const ModelARX &) = default;
@@ -72,7 +71,11 @@ private:
     static void test_ModelARX_skokJednostkowy_1();
     static void test_ModelARX_skokJednostkowy_2();
     static void test_ModelARX_skokJednostkowy_3();
-    static void test_dump();
+    static ModelARX get_test_model();
+    static void test_dump_eq();
+    static void test_dump_length();
+    static void test_dump_very_small();
+    static void test_dump_file();
 
 public:
     static void run_tests();

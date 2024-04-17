@@ -38,3 +38,6 @@
 
 # Executables (no extension, manual list)
 lab1/lab1
+
+# Other binary files
+*.arx

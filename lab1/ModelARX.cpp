@@ -1,8 +1,12 @@
 #include "ModelARX.h"
+#include "util.hpp"
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <version>
 #if __cpp_lib_format >= 201907L
@@ -330,13 +334,20 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_3()
     }
 }
 
-void Testy_ModelARX::test_dump()
+ModelARX Testy_ModelARX::get_test_model()
 {
     ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0.08);
     std::vector<double> x{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 };
     for (const auto i : std::initializer_list<double>{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 }) {
         xx.symuluj(i);
     }
+    return xx;
+}
+
+void Testy_ModelARX::test_dump_eq()
+{
+    std::cerr << "Serialization and deserialization -> equivalence: ";
+    ModelARX xx{ get_test_model() };
     const auto dump = xx.dump();
     ModelARX restored{ dump };
     if (xx != restored)
@@ -347,12 +358,54 @@ void Testy_ModelARX::test_dump()
     }
     if (xx.dump() != restored.dump())
         throw std::logic_error{ "Dumps do not compare equal" };
+    std::cerr << "OK!\n";
+}
+
+void Testy_ModelARX::test_dump_length()
+{
+    std::cerr << "Serialization and deserialization -> total length check: ";
+    ModelARX xx{ get_test_model() };
+    const auto dump = xx.dump();
     try {
         [[maybe_unused]] const auto _ = ModelARX{ dump.cbegin(), std::prev(dump.cend()) };
-        throw std::logic_error{ "Model can be restored from a buffer that is too short" };
+        std::cerr << "FAIL!\n";
+        std::logic_error{ "Model can be restored from a buffer that is too short" };
     } catch (const std::runtime_error &) {
     }
-    std::cerr << "Model can be serialized and deserialized correctly\n";
+    std::cerr << "OK!\n";
+}
+
+void Testy_ModelARX::test_dump_very_small()
+{
+    std::cerr << "Serialization and deserialization -> constant length part check: ";
+    std::array data{ 0x0_u8, 0xFF_u8, 0xFF_u8, 0xDE_u8, 0xAD_u8, 0xBE_u8, 0xEF_u8 };
+    try {
+        [[maybe_unused]] const auto _ = ModelARX{ data.cbegin(), std::prev(data.cend()) };
+        std::cerr << "FAIL!\n";
+        std::logic_error{ "Model can be restored from a buffer that is way too short" };
+    } catch (const std::runtime_error &) {
+    }
+    std::cerr << "OK!\n";
+}
+
+void Testy_ModelARX::test_dump_file()
+{
+    std::cerr << "Serialization and deserialization -> file dump: ";
+    ModelARX xx{ get_test_model() };
+    const auto dump = xx.dump();
+    std::fstream f{ "model.arx",
+                    std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc };
+    f.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+    f.flush();
+    f.sync(); // just to make sure
+    f.seekg(0, std::ios::end);
+    const auto file_size = f.tellg();
+    f.seekg(0, std::ios::beg);
+    const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+    f.read(reinterpret_cast<char *>(buff.get()), file_size);
+    f.close();
+    ModelARX restored{ buff.get(), buff.get() + file_size };
+    std::cerr << (xx == restored ? "OK!\n" : "FAIL!\n");
 }
 
 void Testy_ModelARX::run_tests()
@@ -363,5 +416,8 @@ void Testy_ModelARX::run_tests()
     test_ModelARX_skokJednostkowy_3();
     ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0);
     std::cout << "delay: " << xx.m_transport_delay << " - just proving we're friends\n";
-    test_dump();
+    test_dump_eq();
+    test_dump_length();
+    test_dump_very_small();
+    test_dump_file();
 }
