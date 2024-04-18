@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <deque>
 #include <initializer_list>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <random>
@@ -60,6 +61,8 @@ public:
 
     friend bool operator==(const ModelARX &, const ModelARX &) = default;
     friend bool operator!=(const ModelARX &, const ModelARX &) = default;
+    friend std::ostream &operator<<(std::ostream &os, const ModelARX &m);
+    friend std::istream &operator>>(std::istream &is, ModelARX &m);
     friend class Testy_ModelARX;
 };
 
@@ -76,6 +79,7 @@ private:
     static void test_dump_length();
     static void test_dump_very_small();
     static void test_dump_file();
+    static void test_stream_op();
 
 public:
     static void run_tests();

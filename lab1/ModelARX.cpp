@@ -1,13 +1,16 @@
 #include "ModelARX.h"
 #include "util.hpp"
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <numeric>
+#include <sstream>
 #include <version>
 #if __cpp_lib_format >= 201907L
 #include <format>
@@ -36,7 +39,8 @@ ModelARX::ModelARX(Iter start, Iter end)
             * 8
         + sizeof(raw_data_t)) };
     if (data_size != expected_size)
-        throw std::runtime_error{
+        throw std::runtime_error
+        {
 #if __cpp_lib_format >= 201907L
             std::format("Data size ({} bytes) does not match the expected size ({} bytes)",
                         data_size, expected_size)
@@ -347,7 +351,7 @@ ModelARX Testy_ModelARX::get_test_model()
 void Testy_ModelARX::test_dump_eq()
 {
     std::cerr << "Serialization and deserialization -> equivalence: ";
-    ModelARX xx{ get_test_model() };
+    auto xx = get_test_model();
     const auto dump = xx.dump();
     ModelARX restored{ dump };
     if (xx != restored)
@@ -364,7 +368,7 @@ void Testy_ModelARX::test_dump_eq()
 void Testy_ModelARX::test_dump_length()
 {
     std::cerr << "Serialization and deserialization -> total length check: ";
-    ModelARX xx{ get_test_model() };
+    auto xx = get_test_model();
     const auto dump = xx.dump();
     try {
         [[maybe_unused]] const auto _ = ModelARX{ dump.cbegin(), std::prev(dump.cend()) };
@@ -391,7 +395,7 @@ void Testy_ModelARX::test_dump_very_small()
 void Testy_ModelARX::test_dump_file()
 {
     std::cerr << "Serialization and deserialization -> file dump: ";
-    ModelARX xx{ get_test_model() };
+    auto xx = get_test_model();
     const auto dump = xx.dump();
     std::fstream f{ "model.arx",
                     std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc };
@@ -408,16 +412,96 @@ void Testy_ModelARX::test_dump_file()
     std::cerr << (xx == restored ? "OK!\n" : "FAIL!\n");
 }
 
+void Testy_ModelARX::test_stream_op()
+{
+    std::cerr << "Stream operators -> equality check: ";
+    std::stringstream buff;
+    auto xx = get_test_model();
+    buff << xx;
+    ModelARX yy{ { 0 }, { 1 }, 3, 9.5 };
+    buff >> yy;
+    std::cerr << (xx == yy ? "OK!\n" : "FAIL!\n");
+}
+
 void Testy_ModelARX::run_tests()
 {
     test_ModelARX_brakPobudzenia();
     test_ModelARX_skokJednostkowy_1();
     test_ModelARX_skokJednostkowy_2();
     test_ModelARX_skokJednostkowy_3();
-    ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0);
+    auto xx = get_test_model();
     std::cout << "delay: " << xx.m_transport_delay << " - just proving we're friends\n";
     test_dump_eq();
     test_dump_length();
     test_dump_very_small();
     test_dump_file();
+    test_stream_op();
+}
+
+std::ostream &operator<<(std::ostream &os, const ModelARX &m)
+{
+    const auto precision = os.precision();
+    os.precision(std::numeric_limits<double>::max_digits10);
+    // Format similar to the one used in OI and competitive programming
+    os << m.m_distribution.mean() << ' ' << m.m_distribution.stddev() << '\n'
+       << m.m_init_seed << ' ' << m.m_n_generated << '\n'
+       << m.m_coeff_a.size() << '\n';
+    auto delim{ "" };
+    for (const auto v : m.m_coeff_a) {
+        os << delim << v;
+        delim = " ";
+    }
+    os << '\n' << m.m_coeff_b.size() << '\n';
+    delim = "";
+    for (const auto v : m.m_coeff_b) {
+        os << delim << v;
+        delim = " ";
+    }
+    os << '\n' << m.m_in_signal_mem.size() << '\n';
+    delim = "";
+    for (const auto v : m.m_in_signal_mem) {
+        os << delim << v;
+        delim = " ";
+    }
+    os << '\n' << m.m_out_signal_mem.size() << '\n';
+    delim = "";
+    for (const auto v : m.m_out_signal_mem) {
+        os << delim << v;
+        delim = " ";
+    }
+    os << '\n' << m.m_delay_mem.size() << '\n';
+    delim = "";
+    for (const auto v : m.m_delay_mem) {
+        os << delim << v;
+        delim = " ";
+    }
+    os.precision(precision);
+    return os << '\n';
+}
+
+std::istream &operator>>(std::istream &is, ModelARX &m)
+{
+    double dist_mean, dist_stddev;
+    uint64_t seed, n_generated;
+    is >> dist_mean >> dist_stddev >> seed >> n_generated;
+    m.m_distribution = decltype(m.m_distribution){ dist_mean, dist_stddev };
+    m.m_mt.seed(seed);
+    m.m_init_seed = seed;
+    m.m_n_generated = 0;
+    while (m.m_n_generated < n_generated)
+        m.get_random();
+    const auto read_container = [&is](auto &container) -> uint64_t {
+        uint64_t num;
+        is >> num;
+        container.resize(num);
+        std::copy_n(std::istream_iterator<double>(is), num, container.begin());
+        return num;
+    };
+    read_container(m.m_coeff_a);
+    read_container(m.m_coeff_b);
+    read_container(m.m_in_signal_mem);
+    read_container(m.m_out_signal_mem);
+    auto delay = read_container(m.m_delay_mem);
+    m.m_transport_delay = static_cast<uint32_t>(delay);
+    return is;
 }
