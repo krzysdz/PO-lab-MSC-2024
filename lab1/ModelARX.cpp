@@ -439,8 +439,12 @@ void Testy_ModelARX::run_tests()
 
 std::ostream &operator<<(std::ostream &os, const ModelARX &m)
 {
+    const auto flags = os.flags();
     const auto precision = os.precision();
+    const auto fill = os.fill();
+    os.flags(std::ios::dec | std::ios::left | std::ios::fixed);
     os.precision(std::numeric_limits<double>::max_digits10);
+    os.fill(' ');
     // Format similar to the one used in OI and competitive programming
     os << m.m_distribution.mean() << ' ' << m.m_distribution.stddev() << '\n'
        << m.m_init_seed << ' ' << m.m_n_generated << '\n'
@@ -474,7 +478,9 @@ std::ostream &operator<<(std::ostream &os, const ModelARX &m)
         os << delim << v;
         delim = " ";
     }
+    os.fill(fill);
     os.precision(precision);
+    os.flags(flags);
     return os << '\n';
 }
 
@@ -482,6 +488,8 @@ std::istream &operator>>(std::istream &is, ModelARX &m)
 {
     double dist_mean, dist_stddev;
     uint64_t seed, n_generated;
+    const auto flags = is.flags();
+    is.flags(std::ios::dec | std::ios::skipws);
     is >> dist_mean >> dist_stddev >> seed >> n_generated;
     m.m_distribution = decltype(m.m_distribution){ dist_mean, dist_stddev };
     m.m_mt.seed(seed);
@@ -502,5 +510,6 @@ std::istream &operator>>(std::istream &is, ModelARX &m)
     read_container(m.m_out_signal_mem);
     auto delay = read_container(m.m_delay_mem);
     m.m_transport_delay = static_cast<uint32_t>(delay);
+    is.flags(flags);
     return is;
 }

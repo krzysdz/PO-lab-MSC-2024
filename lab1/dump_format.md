@@ -50,7 +50,7 @@ The first line contains two space separated doubles - the distribution mean (sho
 has the following text representation:
 
 ```
-0 0.080000000000000002
+0.00000000000000000 0.08000000000000000
 3669609946 8
 2
 -0.40000000000000002 0.20000000000000001
