@@ -64,3 +64,11 @@ has the following text representation:
 0.35999999999999999 -0.10000000000000001
 
 ```
+
+### Notes
+
+While there exist `operator<<` and `operator>>` functions for [random number engines](https://eel.is/c++draft/rand.req.eng) and [random number distributions](https://eel.is/c++draft/rand.req.dist), the format of the latter is not specified by standard and:
+
+- libstdc++ and libc++ use different stream flags, although the results in my test were the same
+- MSVC STL uses a completely [different format](https://github.com/microsoft/STL/blob/0515a05b394596de92d08cb0f352614479a2a883/stl/inc/random#L88-L101) for textual representation of `double` values
+- the generator (which is represented in the same way, since the format is actually mentioned in the standard) can't be restored without distribution, because distibution's state depends on the generator

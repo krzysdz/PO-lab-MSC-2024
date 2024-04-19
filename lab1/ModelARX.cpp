@@ -39,8 +39,7 @@ ModelARX::ModelARX(Iter start, Iter end)
             * 8
         + sizeof(raw_data_t)) };
     if (data_size != expected_size)
-        throw std::runtime_error
-        {
+        throw std::runtime_error{
 #if __cpp_lib_format >= 201907L
             std::format("Data size ({} bytes) does not match the expected size ({} bytes)",
                         data_size, expected_size)
