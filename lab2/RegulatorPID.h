@@ -39,5 +39,12 @@ public:
         throw_bad_neg(td);
         m_td = td;
     }
-    constexpr double symuluj(double u) override { return 0.0; };
+    constexpr double symuluj(double u) override
+    {
+        if (m_ti > 0.0)
+            m_integral += u / m_ti;
+        const auto diff{ u - m_prev_e };
+        m_prev_e = u;
+        return m_k * u + m_integral + m_td * diff;
+    };
 };
