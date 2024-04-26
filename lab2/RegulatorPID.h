@@ -10,7 +10,11 @@ private:
     double m_integral{};
     double m_prev_e{};
 
-    constexpr void check_constraints() const;
+    constexpr void check_constraints() const
+    {
+        if (is_bad_or_neg(m_k) || is_bad_or_neg(m_ti) || is_bad_or_neg(m_td))
+            throw std::runtime_error{ "PID parameters must be nonnegative finite numbers" };
+    };
 
 public:
     constexpr RegulatorPID(double k, double ti = 0.0, double td = 0.0)
@@ -35,5 +39,5 @@ public:
         throw_bad_neg(td);
         m_td = td;
     }
-    constexpr double symuluj(double u) override;
+    constexpr double symuluj(double u) override { return 0.0; };
 };
