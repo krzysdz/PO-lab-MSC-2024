@@ -15,36 +15,47 @@ private:
         if (is_bad_or_neg(m_k) || is_bad_or_neg(m_ti) || is_bad_or_neg(m_td))
             throw std::runtime_error{ "PID parameters must be nonnegative finite numbers" };
     };
+    constexpr double sim_propoprtional(const double e) const { return m_k * e; }
+    constexpr double sim_integral(const double e)
+    {
+        if (m_ti > 0.0) {
+            m_integral += e / m_ti;
+            return m_integral;
+        }
+        return 0.0;
+    }
+    constexpr double sim_derviative(const double e)
+    {
+        const auto diff{ e - m_prev_e };
+        m_prev_e = e;
+        return m_td * diff;
+    }
 
 public:
-    constexpr RegulatorPID(double k, double ti = 0.0, double td = 0.0)
+    constexpr RegulatorPID(const double k, const double ti = 0.0, const double td = 0.0)
         : m_k{ k }
         , m_ti{ ti }
         , m_td{ td }
     {
         check_constraints();
     }
-    constexpr void set_k(double k)
+    constexpr void set_k(const double k)
     {
         throw_bad_neg(k);
         m_k = k;
     }
-    constexpr void set_ti(double ti)
+    constexpr void set_ti(const double ti)
     {
         throw_bad_neg(ti);
         m_ti = ti;
     }
-    constexpr void set_td(double td)
+    constexpr void set_td(const double td)
     {
         throw_bad_neg(td);
         m_td = td;
     }
-    constexpr double symuluj(double u) override
+    constexpr double symuluj(const double e) override
     {
-        if (m_ti > 0.0)
-            m_integral += u / m_ti;
-        const auto diff{ u - m_prev_e };
-        m_prev_e = u;
-        return m_k * u + m_integral + m_td * diff;
+        return sim_propoprtional(e) + sim_integral(e) + sim_derviative(e);
     };
 };
