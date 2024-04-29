@@ -2,6 +2,9 @@
 #include "../lab1/ObiektSISO.h"
 #include "../lab1/util.hpp"
 #include <iostream>
+#include <iterator>
+#include <type_traits>
+#include <vector>
 
 class RegulatorPID : public ObiektSISO {
 private:
@@ -33,6 +36,28 @@ private:
     }
 
 public:
+    constexpr RegulatorPID(const std::vector<uint8_t> &data)
+        : RegulatorPID{ data.cbegin(), data.cend() } {};
+    template <typename Iter>
+        requires std::contiguous_iterator<Iter>
+        && std::is_same_v<typename std::iterator_traits<Iter>::value_type, uint8_t>
+    constexpr RegulatorPID(Iter start, Iter end)
+    {
+        constexpr std::size_t expected_size = 40UL;
+        const auto data_size{ std::distance(start, end) };
+        if (data_size < static_cast<std::ptrdiff_t>(expected_size))
+            throw std::runtime_error{ "Data size is smaller than expected" };
+
+        std::array<uint8_t, expected_size> byte_array;
+        std::copy_n(start, expected_size, byte_array.end());
+        const auto [k, ti, td, integral, prev_e] = array_from_bytes<double, 5UL>(byte_array);
+        m_k = k;
+        m_ti = ti;
+        m_td = td;
+        m_integral = integral;
+        m_prev_e = prev_e;
+        check_constraints();
+    }
     constexpr RegulatorPID(const double k, const double ti = 0.0, const double td = 0.0)
         : m_k{ k }
         , m_ti{ ti }
@@ -58,7 +83,12 @@ public:
     constexpr double symuluj(const double e) override
     {
         return sim_propoprtional(e) + sim_integral(e) + sim_derviative(e);
-    };
+    }
+    constexpr std::vector<uint8_t> dump() const
+    {
+        auto bytes = to_bytes(std::array{ m_k, m_ti, m_td, m_integral, m_prev_e });
+        return std::vector(bytes.begin(), bytes.end());
+    }
 
     friend bool operator==(const RegulatorPID &, const RegulatorPID &) = default;
     friend bool operator!=(const RegulatorPID &, const RegulatorPID &) = default;
