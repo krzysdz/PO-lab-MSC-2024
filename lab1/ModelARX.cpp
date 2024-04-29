@@ -318,8 +318,7 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_3()
 ModelARX Testy_ModelARX::get_test_model()
 {
     ModelARX xx({ -0.4, 0.2 }, { 0.6, 0.3 }, 2, 0.08);
-    std::vector<double> x{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 };
-    for (const auto i : std::initializer_list<double>{ 0.1, 0.0, 0.5, 0, 2, -0.2, -0.1, 0.36 }) {
+    for (const auto i : { 0.1, 0.0, 0.5, 0.0, 2.0, -0.2, -0.1, 0.36 }) {
         xx.symuluj(i);
     }
     return xx;
@@ -333,7 +332,7 @@ void Testy_ModelARX::test_dump_eq()
     ModelARX restored{ dump };
     if (xx != restored)
         throw std::logic_error{ "Restored model does not compare equal" };
-    for (const auto i : std::initializer_list<double>{ 0.3, -0.2, -0.1, 0, -0.3, -0, 0.1, 0.15 }) {
+    for (const auto i : { 0.3, -0.2, -0.1, 0.0, -0.3, -0.0, 0.1, 0.15 }) {
         if (xx.symuluj(i) != restored.symuluj(i))
             throw std::logic_error{ "Restored model behaves differently" };
     }

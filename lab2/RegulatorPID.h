@@ -49,7 +49,7 @@ public:
             throw std::runtime_error{ "Data size is smaller than expected" };
 
         std::array<uint8_t, expected_size> byte_array;
-        std::copy_n(start, expected_size, byte_array.end());
+        std::copy_n(start, expected_size, byte_array.begin());
         const auto [k, ti, td, integral, prev_e] = array_from_bytes<double, 5UL>(byte_array);
         m_k = k;
         m_ti = ti;
@@ -98,11 +98,16 @@ public:
 
 class Testy_RegulatorPID {
 private:
-	static void test_RegulatorP_brakPobudzenia();
-	static void test_RegulatorP_skokJednostkowy();
-	static void test_RegulatorPI_skokJednostkowy_1();
-	static void test_RegulatorPI_skokJednostkowy_2();
-	static void test_RegulatorPID_skokJednostkowy();
+    static void test_RegulatorP_brakPobudzenia();
+    static void test_RegulatorP_skokJednostkowy();
+    static void test_RegulatorPI_skokJednostkowy_1();
+    static void test_RegulatorPI_skokJednostkowy_2();
+    static void test_RegulatorPID_skokJednostkowy();
+    constexpr static RegulatorPID get_test_model();
+    static void test_dump_eq();
+    static void test_dump_length();
+    static void test_dump_file();
+    static void test_stream_op();
 
 public:
     static void run_tests();
