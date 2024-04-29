@@ -174,28 +174,6 @@ std::vector<uint8_t> ModelARX::dump() const
     return serialized;
 }
 
-void Testy_ModelARX::raportBleduSekwencji(std::vector<double> &spodz, std::vector<double> &fakt)
-{
-    constexpr size_t PREC = 3;
-    std::cerr << std::fixed << std::setprecision(PREC);
-    std::cerr << "  Spodziewany:\t";
-    for (auto &el : spodz)
-        std::cerr << el << ", ";
-    std::cerr << "\n  Faktyczny:\t";
-    for (auto &el : fakt)
-        std::cerr << el << ", ";
-    std::cerr << std::endl << std::endl;
-}
-
-bool Testy_ModelARX::porownanieSekwencji(std::vector<double> &spodz, std::vector<double> &fakt)
-{
-    constexpr double TOL = 1e-3; // tolerancja dla porównań zmiennoprzecinkowych
-    bool result = fakt.size() == spodz.size();
-    for (int i = 0; result && i < fakt.size(); i++)
-        result = fabs(fakt[i] - spodz[i]) < TOL;
-    return result;
-}
-
 void Testy_ModelARX::test_ModelARX_brakPobudzenia()
 {
     // Sygnatura testu:
@@ -214,11 +192,11 @@ void Testy_ModelARX::test_ModelARX_brakPobudzenia()
             faktSygWy[i] = instancjaTestowa.symuluj(sygWe[i]);
 
         // Walidacja poprawności i raport:
-        if (porownanieSekwencji(spodzSygWy, faktSygWy))
+        if (TESTY::porownanieSekwencji(spodzSygWy, faktSygWy))
             std::cerr << "OK!\n";
         else {
             std::cerr << "FAIL!\n";
-            raportBleduSekwencji(spodzSygWy, faktSygWy);
+            TESTY::raportBleduSekwencji(spodzSygWy, faktSygWy);
         }
     } catch (...) {
         std::cerr << "INTERUPTED! (niespodziwany wyjatek)\n";
@@ -252,11 +230,11 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_1()
             faktSygWy[i] = instancjaTestowa.symuluj(sygWe[i]);
 
         // Walidacja poprawności i raport:
-        if (porownanieSekwencji(spodzSygWy, faktSygWy))
+        if (TESTY::porownanieSekwencji(spodzSygWy, faktSygWy))
             std::cerr << "OK!\n";
         else {
             std::cerr << "FAIL!\n";
-            raportBleduSekwencji(spodzSygWy, faktSygWy);
+            TESTY::raportBleduSekwencji(spodzSygWy, faktSygWy);
         }
     } catch (...) {
         std::cerr << "INTERUPTED! (niespodziwany wyjatek)\n";
@@ -290,11 +268,11 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_2()
             faktSygWy[i] = instancjaTestowa.symuluj(sygWe[i]);
 
         // Walidacja poprawności i raport:
-        if (porownanieSekwencji(spodzSygWy, faktSygWy))
+        if (TESTY::porownanieSekwencji(spodzSygWy, faktSygWy))
             std::cerr << "OK!\n";
         else {
             std::cerr << "FAIL!\n";
-            raportBleduSekwencji(spodzSygWy, faktSygWy);
+            TESTY::raportBleduSekwencji(spodzSygWy, faktSygWy);
         }
     } catch (...) {
         std::cerr << "INTERUPTED! (niespodziwany wyjatek)\n";
@@ -326,11 +304,11 @@ void Testy_ModelARX::test_ModelARX_skokJednostkowy_3()
             faktSygWy[i] = instancjaTestowa.symuluj(sygWe[i]);
 
         // Weryfikacja poprawności i raport:
-        if (porownanieSekwencji(spodzSygWy, faktSygWy))
+        if (TESTY::porownanieSekwencji(spodzSygWy, faktSygWy))
             std::cerr << "OK!\n";
         else {
             std::cerr << "FAIL!\n";
-            raportBleduSekwencji(spodzSygWy, faktSygWy);
+            TESTY::raportBleduSekwencji(spodzSygWy, faktSygWy);
         }
     } catch (...) {
         std::cerr << "INTERUPTED! (niespodziwany wyjatek)\n";
