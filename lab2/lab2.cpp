@@ -9,6 +9,8 @@
 
 #include "RegulatorPID.h"
 
+#ifdef DEBUG
+
 //Funkcje pomocnicze dla testów:
 
 void raportBleduSekwencji(std::vector<double>& spodz, std::vector<double>& fakt)
@@ -218,8 +220,6 @@ void test_RegulatorPID_skokJednostkowy()
 	}
 }
 
-#ifdef DEBUG
-
 using namespace std;
 
 int main()
@@ -240,7 +240,7 @@ using namespace std;
 
 int main()
 {
-
+	Testy_RegulatorPID::run_tests();
 }
 #endif
 
