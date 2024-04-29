@@ -1,6 +1,7 @@
 #pragma once
 #include "../lab1/ObiektSISO.h"
 #include "../lab1/util.hpp"
+#include <iostream>
 
 class RegulatorPID : public ObiektSISO {
 private:
@@ -58,4 +59,9 @@ public:
     {
         return sim_propoprtional(e) + sim_integral(e) + sim_derviative(e);
     };
+
+    friend bool operator==(const RegulatorPID &, const RegulatorPID &) = default;
+    friend bool operator!=(const RegulatorPID &, const RegulatorPID &) = default;
+    friend std::ostream &operator<<(std::ostream &os, const RegulatorPID &m);
+    friend std::istream &operator>>(std::istream &is, RegulatorPID &m);
 };
