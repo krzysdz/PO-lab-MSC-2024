@@ -121,9 +121,13 @@ inline void ModelARX::set_stddev(const double stddev)
 double ModelARX::symuluj(double u)
 {
     m_in_signal_mem.pop_back();
-    m_in_signal_mem.push_front(m_delay_mem.back());
-    m_delay_mem.pop_back();
-    m_delay_mem.push_front(u);
+    if (m_transport_delay) {
+        m_in_signal_mem.push_front(m_delay_mem.back());
+        m_delay_mem.pop_back();
+        m_delay_mem.push_front(u);
+    } else {
+        m_in_signal_mem.push_front(u);
+    }
     const auto b_poly{ std::inner_product(m_coeff_b.begin(), m_coeff_b.end(),
                                           m_in_signal_mem.begin(), 0.0) };
     const auto a_poly{ std::inner_product(m_coeff_a.begin(), m_coeff_a.end(),
