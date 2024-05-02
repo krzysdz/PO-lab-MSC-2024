@@ -118,7 +118,7 @@ void MainWindow::prepare_layout()
     // Plot
     plot = new QChart{};
     chart_view = new QChartView{ plot, widget_central };
-	chart_view->setRenderHint(QPainter::Antialiasing);
+    chart_view->setRenderHint(QPainter::Antialiasing);
     layout_right_col->addWidget(chart_view);
 }
 
@@ -188,28 +188,12 @@ void MainWindow::plot_results()
         results_series->append(static_cast<double>(i), real_outputs[i]);
         inputs_series->append(static_cast<double>(i), given_inputs[i]);
     }
-	results_series->setName("Simulation results");
-	inputs_series->setName("Inputs");
+    results_series->setName("Simulation results");
+    inputs_series->setName("Inputs");
     plot->removeAllSeries();
     plot->addSeries(results_series);
     plot->addSeries(inputs_series);
-	plot->createDefaultAxes();
-}
-
-#ifndef QT_NO_SESSIONMANAGER
-void MainWindow::commitData(QSessionManager &)
-{
-    // The application can ask the user whether to save open files or sth
-    // https://doc.qt.io/qt-6/qsessionmanager.html
-}
-#endif
-
-MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
-    : QMainWindow{ parent, flags }
-{
-#ifndef QT_NO_SESSIONMANAGER
-    connect(qApp, &QGuiApplication::commitDataRequest, this, &MainWindow::commitData);
-#endif
+    plot->createDefaultAxes();
 }
 
 void MainWindow::start()

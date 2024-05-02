@@ -56,11 +56,11 @@ private:
     void configure_loop();
     void simulate();
     void plot_results();
-#ifndef QT_NO_SESSIONMANAGER
-    void commitData(QSessionManager &);
-#endif
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags())
+        : QMainWindow{ parent, flags }
+    {
+    }
     void start();
 };
