@@ -96,6 +96,7 @@ public:
     friend std::istream &operator>>(std::istream &is, RegulatorPID &m);
 };
 
+#ifndef NO_LAB_TESTS
 class Testy_RegulatorPID {
 private:
     static void test_RegulatorP_brakPobudzenia();
@@ -112,3 +113,4 @@ private:
 public:
     static void run_tests();
 };
+#endif

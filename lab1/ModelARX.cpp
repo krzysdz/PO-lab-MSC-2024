@@ -178,6 +178,7 @@ std::vector<uint8_t> ModelARX::dump() const
     return serialized;
 }
 
+#ifndef NO_LAB_TESTS
 void Testy_ModelARX::test_ModelARX_brakPobudzenia()
 {
     // Sygnatura testu:
@@ -417,6 +418,7 @@ void Testy_ModelARX::run_tests()
     test_dump_file();
     test_stream_op();
 }
+#endif
 
 std::ostream &operator<<(std::ostream &os, const ModelARX &m)
 {

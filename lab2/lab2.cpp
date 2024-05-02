@@ -220,19 +220,7 @@ int main()
 
 #ifdef MAIN
 #include "../lab1/ModelARX.h"
-#include <optional>
-
-double feedback_step(RegulatorPID &regulator, ModelARX &model, const double u,
-                     const std::optional<double> &reset = std::nullopt)
-{
-    static double last_output = 0.0;
-    if (reset.has_value())
-        last_output = reset.value();
-    const auto e = u - last_output;
-    const auto input = regulator.symuluj(e);
-    last_output = model.symuluj(input);
-    return last_output;
-}
+#include "feedback_loop.hpp"
 
 ModelARX get_model() { return ModelARX{ { -0.4 }, { 0.6 }, 1, 0.0 }; }
 

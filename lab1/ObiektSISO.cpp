@@ -1,4 +1,5 @@
 #include "ObiektSISO.h"
+#ifndef NO_LAB_TESTS
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -24,3 +25,4 @@ bool TESTY::porownanieSekwencji(std::vector<double> &spodz, std::vector<double> 
         result = fabs(fakt[i] - spodz[i]) < TOL;
     return result;
 }
+#endif
