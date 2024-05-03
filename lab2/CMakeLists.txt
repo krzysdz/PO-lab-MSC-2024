@@ -8,8 +8,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_definitions(NO_LAB_TESTS)
 
-add_compile_options(-fsanitize=address,undefined,leak)
-add_link_options(-fsanitize=address,undefined,leak)
+# Enable more warnings
+if (MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# Enable ASAN (and other sanitizers) in Debug builds
+if (MSVC)
+    add_compile_options("$<$<CONFIG:DEBUG>:/fsanitize=address>")
+else()
+    add_compile_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
+    add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
+endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
 qt_standard_project_setup()
