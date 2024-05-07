@@ -171,6 +171,11 @@ void MainWindow::simulate()
             reset_opt.reset();
         }
 #if __cpp_lib_containers_ranges >= 202202L
+        // This works with libc++, but it does not currently implement the
+        // __cpp_lib_containers_ranges macro; only __cpp_lib_ranges_to_container is defined, even
+        // though P1206R7 is fully implemented
+        // Should be fixed in LLVM 19: https://github.com/llvm/llvm-project/pull/90914
+        // A workaroud is provided in define_fixes.hpp
         given_inputs.append_range(inputs);
 #else
         given_inputs.insert(given_inputs.end(), inputs.begin(), inputs.end());

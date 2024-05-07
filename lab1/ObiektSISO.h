@@ -1,4 +1,5 @@
 #pragma once
+#include "../lab2/define_fixes.hpp"
 #include <vector>
 
 class ObiektSISO {
