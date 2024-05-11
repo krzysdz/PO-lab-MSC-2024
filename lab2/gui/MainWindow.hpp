@@ -7,13 +7,13 @@
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGridLayout>
-#include <QHBoxLayout>
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
 #include <QSessionManager>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QVBoxLayout>
 #include <optional>
 
@@ -21,11 +21,10 @@ class MainWindow : public QMainWindow {
 private:
     QMenu *menu_file;
     QAction *action_exit;
-    QWidget *widget_central;
     QWidget *widget_right;
     QWidget *widget_parameters;
     QWidget *widget_inputs;
-    QHBoxLayout *main_columns;
+    QSplitter *main_columns_splitter;
     QFormLayout *layout_parameters;
     QVBoxLayout *layout_right_col;
     QChart *plot;

@@ -25,14 +25,13 @@ void MainWindow::prepare_menu_bar()
 
 void MainWindow::prepare_layout()
 {
-    widget_central = new QWidget{ this };
-    setCentralWidget(widget_central);
-
-    main_columns = new QHBoxLayout{ widget_central };
+    main_columns_splitter = new QSplitter{ this };
+    main_columns_splitter->setChildrenCollapsible(false);
+    setCentralWidget(main_columns_splitter);
 
     // Parameters section - left part of the window
-    widget_parameters = new QWidget{ widget_central };
-    main_columns->addWidget(widget_parameters);
+    widget_parameters = new QWidget{ main_columns_splitter };
+    main_columns_splitter->addWidget(widget_parameters);
 
     layout_parameters = new QFormLayout{ widget_parameters };
 
@@ -90,8 +89,8 @@ void MainWindow::prepare_layout()
     connect(button_apply_params, &QPushButton::released, this, &MainWindow::configure_loop);
 
     // Right part of the window
-    widget_right = new QWidget{ widget_central };
-    main_columns->addWidget(widget_right);
+    widget_right = new QWidget{ main_columns_splitter };
+    main_columns_splitter->addWidget(widget_right);
     layout_right_col = new QVBoxLayout{ widget_right };
 
     // Inputs and simulation options
@@ -117,7 +116,7 @@ void MainWindow::prepare_layout()
 
     // Plot
     plot = new QChart{};
-    chart_view = new QChartView{ plot, widget_central };
+    chart_view = new QChartView{ plot, widget_right };
     chart_view->setRenderHint(QPainter::Antialiasing);
     layout_right_col->addWidget(chart_view);
 }
