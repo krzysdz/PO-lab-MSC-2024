@@ -19,7 +19,7 @@ endif()
 if (MSVC)
     add_compile_options("$<$<CONFIG:DEBUG>:/fsanitize=address>")
 else()
-    add_compile_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
+    add_compile_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>" "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>")
     add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
 endif()
 
