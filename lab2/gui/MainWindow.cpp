@@ -147,13 +147,11 @@ void MainWindow::configure_loop()
     auto coeff_b = parse_coefficients(input_arx_coeff_b->text());
     const auto delay = input_arx_delay->value();
     const auto stddev = input_arx_stddev->value();
-    ModelARX new_model{ std::move(coeff_a), std::move(coeff_b), delay, stddev };
     const auto k = input_pid_k->value();
     const auto Ti = input_pid_ti->value();
     const auto Td = input_pid_td->value();
-    RegulatorPID new_regulator{ k, Ti, Td };
-    model_opt = new_model;
-    regulator_opt = new_regulator;
+    model_opt.emplace(std::move(coeff_a), std::move(coeff_b), delay, stddev);
+    regulator_opt.emplace(k, Ti, Td);
     should_reset = true;
 }
 
