@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QLineSeries>
 #include <QMenuBar>
+#include <QMessageBox>
 
 void MainWindow::setup_ui()
 {
@@ -124,10 +125,18 @@ void MainWindow::prepare_layout()
 std::vector<double> MainWindow::parse_coefficients(const QString &coeff_text)
 {
     std::vector<double> coefficients;
+    bool success{ true };
     const auto coeff_list = coeff_text.split(",", Qt::SplitBehaviorFlags::SkipEmptyParts);
     for (const auto &coeff : coeff_list) {
-        // TODO: Should the conversion status be checked?
-        coefficients.push_back(coeff.trimmed().toDouble());
+        bool ok;
+        coefficients.push_back(coeff.trimmed().toDouble(&ok));
+        success &= ok;
+    }
+    if (!success) {
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+                                 "Could not parse a comma-separated list of doubles",
+                                 QMessageBox::StandardButton::Close };
+        message_box.exec();
     }
     return coefficients;
 }
@@ -150,9 +159,14 @@ void MainWindow::configure_loop()
 
 void MainWindow::simulate()
 {
-    // TODO: Notify the user or use default model values
-    if (!regulator_opt.has_value() || !model_opt.has_value())
+    if (!regulator_opt.has_value() || !model_opt.has_value()) {
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+                                 "Enter correct model and regulator parameters and click the "
+                                 "<b>Apply parameters</b> button before simulating",
+                                 QMessageBox::StandardButton::Close };
+        message_box.exec();
         return;
+    }
     std::optional<double> reset_opt{};
     if (should_reset) {
         reset_opt = 0.0;
