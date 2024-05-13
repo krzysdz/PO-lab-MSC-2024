@@ -84,8 +84,7 @@ void MainWindow::prepare_layout()
     layout_parameters->setWidget(5, QFormLayout::ItemRole::SpanningRole, arx_label);
 
     input_arx_delay = new QSpinBox{ widget_parameters };
-    input_arx_delay->setMinimum(0);
-    input_arx_delay->setValue(1);
+    input_arx_delay->setMinimum(1);
     layout_parameters->addRow("Delay", input_arx_delay);
 
     input_arx_stddev = new QDoubleSpinBox{ widget_parameters };

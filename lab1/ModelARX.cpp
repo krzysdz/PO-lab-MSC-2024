@@ -46,8 +46,8 @@ void ModelARX::set_coeff_b(std::vector<double> &&coefficients) noexcept
 
 void ModelARX::set_transport_delay(const int32_t delay)
 {
-    if (delay < 0)
-        throw std::runtime_error{ "Delay must be >= 0" };
+    if (delay < 1)
+        throw std::runtime_error{ "Delay must be >= 1" };
     m_transport_delay = static_cast<uint32_t>(delay);
     m_delay_mem.resize(m_transport_delay);
 }
@@ -63,13 +63,9 @@ inline void ModelARX::set_stddev(const double stddev)
 double ModelARX::symuluj(double u)
 {
     m_in_signal_mem.pop_back();
-    if (m_transport_delay) {
-        m_in_signal_mem.push_front(m_delay_mem.back());
-        m_delay_mem.pop_back();
-        m_delay_mem.push_front(u);
-    } else {
-        m_in_signal_mem.push_front(u);
-    }
+    m_in_signal_mem.push_front(m_delay_mem.back());
+    m_delay_mem.pop_back();
+    m_delay_mem.push_front(u);
     const auto b_poly{ std::inner_product(m_coeff_b.begin(), m_coeff_b.end(),
                                           m_in_signal_mem.begin(), 0.0) };
     const auto a_poly{ std::inner_product(m_coeff_a.begin(), m_coeff_a.end(),
