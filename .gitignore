@@ -45,4 +45,6 @@ lab2/lab2
 
 # Other binary files
 *.arx
+*.arxt
 *.pid
+*.pidt

@@ -20,7 +20,13 @@
 class MainWindow : public QMainWindow {
 private:
     QMenu *menu_file;
+    QMenu *submenu_export;
+    QMenu *submenu_import;
     QAction *action_exit;
+    QAction *action_export_model;
+    QAction *action_export_pid;
+    QAction *action_import_model;
+    QAction *action_import_pid;
     QWidget *widget_right;
     QWidget *widget_parameters;
     QWidget *widget_inputs;
@@ -55,6 +61,11 @@ private:
     void configure_loop();
     void simulate();
     void plot_results();
+
+    void export_model();
+    void export_pid();
+    void import_model();
+    void import_pid();
 
 public:
     explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags())

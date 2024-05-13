@@ -1,11 +1,17 @@
 #include "MainWindow.hpp"
 #include "../feedback_loop.hpp"
 #include <QApplication>
+#include <QDir>
+#include <QFileDialog>
 #include <QFrame>
 #include <QLabel>
 #include <QLineSeries>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <filesystem>
+#include <fstream>
+
+namespace fs = std::filesystem;
 
 void MainWindow::setup_ui()
 {
@@ -17,11 +23,28 @@ void MainWindow::prepare_menu_bar()
 {
     menu_file = menuBar()->addMenu("&File");
 
-    action_exit = new QAction{ "Exit", menu_file };
+    // Export
+    submenu_export = menu_file->addMenu("Export");
+
+    action_export_model = submenu_export->addAction("ARX model");
+    connect(action_export_model, &QAction::triggered, this, &MainWindow::export_model);
+
+    action_export_pid = submenu_export->addAction("PID regulator");
+    connect(action_export_pid, &QAction::triggered, this, &MainWindow::export_pid);
+
+    // Import
+    submenu_import = menu_file->addMenu("Import");
+
+    action_import_model = submenu_import->addAction("ARX model");
+    connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
+
+    action_import_pid = submenu_import->addAction("PID regulator");
+    connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_pid);
+
+    // Others
+    action_exit = menu_file->addAction("Exit");
     action_exit->setShortcut(QKeySequence::Quit);
     connect(action_exit, &QAction::triggered, &QApplication::quit);
-
-    menu_file->addAction(action_exit);
 }
 
 void MainWindow::prepare_layout()
@@ -210,6 +233,120 @@ void MainWindow::plot_results()
     plot->addSeries(results_series);
     plot->addSeries(inputs_series);
     plot->createDefaultAxes();
+}
+
+void MainWindow::export_model()
+{
+    if (!model_opt.has_value()) {
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+                                 "Model is not defined. Make sure to click <b>Apply parameters</b> "
+                                 "button before exporting.",
+                                 QMessageBox::StandardButton::Close };
+        message_box.exec();
+        return;
+    }
+
+    QString filter{ "ARX binary model (*.arx);;ARX text model (*.arxt)" };
+    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+                                                       QDir::currentPath(), filter, &filter)
+                              .toStdU16String();
+    if (filename.empty())
+        return;
+    fs::path path{ filename };
+    const auto ext = path.extension();
+    if (ext != ".arx" && ext != ".arxt")
+        path.replace_extension(".arx");
+    if (filename.back() == u't') {
+        std::ofstream out{ path, std::ios::out | std::ios::trunc };
+        out << model_opt.value();
+    } else {
+        const auto dump = model_opt->dump();
+        std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+        out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+        out.flush();
+    }
+}
+
+void MainWindow::export_pid()
+{
+    if (!regulator_opt.has_value()) {
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+                                 "Regulator is not defined. Make sure to click <b>Apply "
+                                 "parameters</b> button before exporting.",
+                                 QMessageBox::StandardButton::Close };
+        message_box.exec();
+        return;
+    }
+
+    QString filter{ "PID binary model (*.pid);;PID text model (*.pidt)" };
+    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+                                                       QDir::currentPath(), filter, &filter)
+                              .toStdU16String();
+    if (filename.empty())
+        return;
+    fs::path path{ filename };
+    const auto ext = path.extension();
+    if (ext != ".pid" && ext != ".pidt")
+        path.replace_extension(".pid");
+    if (filename.back() == u't') {
+        std::ofstream out{ path, std::ios::out | std::ios::trunc };
+        out << regulator_opt.value();
+    } else {
+        const auto dump = regulator_opt->dump();
+        std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+        out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+        out.flush();
+    }
+}
+
+void MainWindow::import_model()
+{
+    const auto filename = QFileDialog::getOpenFileName(
+        this, "Select ARX model file", QDir::currentPath(),
+        "ARX model (*.arx *.arxt);;ARX binary model (*.arx);;ARX text model (*.arxt)");
+    if (filename.isEmpty())
+        return;
+    const fs::path path{ filename.toStdU16String() };
+    if (filename.back() == u't') {
+        std::ifstream in{ path };
+        ModelARX m{ {}, {}, 1 };
+        in >> m;
+        model_opt = std::move(m);
+    } else {
+        std::ifstream in{ path, std::ios::binary };
+        in.seekg(0, std::ios::end);
+        const auto file_size = in.tellg();
+        in.seekg(0, std::ios::beg);
+        const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+        in.read(reinterpret_cast<char *>(buff.get()), file_size);
+        in.close();
+        model_opt.emplace(buff.get(), buff.get() + file_size);
+    }
+}
+
+void MainWindow::import_pid()
+{
+    const auto filename = QFileDialog::getOpenFileName(
+        this, "Select PID regulator file", QDir::currentPath(),
+        "PID regulator (*.pid *.pidt);;PID binary model (*.pid);;PID text model (*.pidt)");
+    if (filename.isEmpty())
+        return;
+    const fs::path path{ filename.toStdU16String() };
+    if (filename.back() == u't') {
+        std::ifstream in{ path };
+        RegulatorPID pid{ 0 };
+        in >> pid;
+        regulator_opt = std::move(pid);
+    } else {
+        std::ifstream in{ path, std::ios::binary };
+        in.seekg(0, std::ios::end);
+        const auto file_size = in.tellg();
+        in.seekg(0, std::ios::beg);
+        const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+        in.read(reinterpret_cast<char *>(buff.get()), file_size);
+        in.close();
+        regulator_opt.emplace(buff.get(), buff.get() + file_size);
+    }
 }
 
 void MainWindow::start()
