@@ -8,6 +8,10 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
+#include <version>
+#if __cpp_lib_format >= 201907L
+#include <format>
+#endif
 
 #include "ObiektSISO.h"
 

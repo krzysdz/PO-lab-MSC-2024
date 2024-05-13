@@ -11,10 +11,6 @@
 #include <memory>
 #include <numeric>
 #include <sstream>
-#include <version>
-#if __cpp_lib_format >= 201907L
-#include <format>
-#endif
 
 double ModelARX::get_random()
 {
