@@ -42,6 +42,7 @@ build/
 # Executables (no extension, manual list)
 lab1/lab1
 lab2/lab2
+lab3/lab3
 
 # Other binary files
 *.arx
