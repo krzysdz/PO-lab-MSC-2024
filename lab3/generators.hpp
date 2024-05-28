@@ -37,7 +37,7 @@ public:
         validate_time();
     }
     virtual double symuluj(int time) = 0;
-    virtual ~Generator(){};
+    constexpr virtual ~Generator(){};
 };
 
 class GeneratorDecor : public Generator {
@@ -77,7 +77,7 @@ private:
         return enabled_time(time)
             // Should (time - m_start_time) be used instead of time? This question applies to all
             // non-constant signals
-            ? m_amplitude * std::sin(2.0 * std::numbers::pi * (time % m_period))
+            ? m_amplitude * std::sin(2.0 * std::numbers::pi * (time % m_period) / m_period)
             : 0.0;
     }
 
@@ -146,9 +146,10 @@ public:
     constexpr void set_period(uint32_t period) noexcept { m_period = period; }
 };
 
-template <std::uniform_random_bit_generator G> class GeneratorUniformNoise : public GeneratorDecor {
-private:
-    std::uniform_real_distribution<> m_dist{};
+template <std::uniform_random_bit_generator G, typename D>
+class GeneratorRandomBase : public GeneratorDecor {
+protected:
+    D m_dist{};
     std::shared_ptr<G> m_gen_p;
 
     void validate_gen_ptr() const
@@ -156,11 +157,10 @@ private:
         if (!m_gen_p)
             throw std::runtime_error{ "Pointer to generator is null" };
     }
-    double simulate_internal(int) override { return m_amplitude * (m_dist(*m_gen_p) - 0.5); }
 
 public:
-    GeneratorUniformNoise(std::unique_ptr<Generator> &&base, double amplitude,
-                          const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
+    GeneratorRandomBase(std::unique_ptr<Generator> &&base, double amplitude,
+                        const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
         : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
         , m_gen_p{ gen_p }
     {
@@ -173,35 +173,43 @@ public:
     }
 };
 
-template <std::uniform_random_bit_generator G> class GeneratorNormalNoise : public GeneratorDecor {
+template <std::uniform_random_bit_generator G>
+class GeneratorUniformNoise : public GeneratorRandomBase<G, std::uniform_real_distribution<>> {
 private:
-    std::normal_distribution<> m_dist{};
-    std::shared_ptr<G> m_gen_p;
+    double simulate_internal(int) override
+    {
+        return this->m_amplitude * (this->m_dist(*this->m_gen_p) - 0.5);
+    }
+
+public:
+    GeneratorUniformNoise(std::unique_ptr<Generator> &&base, double amplitude,
+                          const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
+        : GeneratorRandomBase<G, std::uniform_real_distribution<>>{ std::move(base), amplitude,
+                                                                    gen_p, t_start, t_end }
+    {
+    }
+};
+
+template <std::uniform_random_bit_generator G>
+class GeneratorNormalNoise : public GeneratorRandomBase<G, std::normal_distribution<>> {
+private:
+    using pt = std::normal_distribution<>::param_type;
+
     double m_stddev;
 
-    using pt = decltype(m_dist)::param_type;
-
-    void validate_gen_ptr() const
+    double simulate_internal(int) override
     {
-        if (!m_gen_p)
-            throw std::runtime_error{ "Pointer to generator is null" };
+        return this->m_dist(*this->m_gen_p, pt{ this->m_amplitude, m_stddev });
     }
-    double simulate_internal(int) override { return m_dist(*m_gen_p, pt{ m_amplitude, m_stddev }); }
 
 public:
     GeneratorNormalNoise(std::unique_ptr<Generator> &&base, double mean, double stddev,
                          const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
-        : GeneratorDecor{ std::move(base), mean, t_start, t_end }
+        : GeneratorRandomBase<G, std::normal_distribution<>>{ std::move(base), mean, gen_p, t_start,
+                                                              t_end }
         , m_stddev{ stddev }
-        , m_gen_p{ gen_p }
     {
-        validate_gen_ptr();
     }
-    void set_generator(std::shared_ptr<G> &gen_p)
-    {
-        m_gen_p = gen_p;
-        validate_gen_ptr();
-    }
-    constexpr void set_mean(double mean) { set_amplitude(mean); }
+    constexpr void set_mean(double mean) { this->set_amplitude(mean); }
     constexpr void set_stddev(double stddev) { m_stddev = stddev; }
 };

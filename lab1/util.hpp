@@ -5,17 +5,43 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <functional>
+#include <ostream>
+#include <ranges>
 #include <stdexcept>
 #include <type_traits>
 
 template <typename T>
-concept trivially_copyable = std::is_trivially_copyable_v<T>;
+concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
 
 template <typename T>
-concept arithmetic = std::is_arithmetic_v<T>;
+concept Arithmetic = std::is_arithmetic_v<T>;
 
 template <typename B>
-concept byte_repr = std::is_same_v<B, unsigned char> || std::is_same_v<B, std::byte>;
+concept ByteRepr = std::is_same_v<B, unsigned char> || std::is_same_v<B, std::byte>;
+
+template <typename T>
+concept Streamable = requires(std::ostream &os, T val) { os << val; };
+
+// Satisfies and InputRangeOver are based on:
+// Ed Catmur, Higher-Order Template Metaprogramming with C++23
+// https://www.youtube.com/watch?v=KENynEQoqCo
+template <typename T, auto C>
+concept Satisfies = requires { C.template operator()<T>(); };
+
+template <typename T, auto C>
+concept InputRangeOver
+    = std::ranges::input_range<T> and Satisfies<std::ranges::range_value_t<T>, C>;
+
+template <typename A, typename B, typename Pred = std::ranges::equal_to>
+concept DirectlyComparable = requires(Pred pred, A a, B b) {
+    { std::invoke(pred, a, b) } -> std::convertible_to<bool>;
+};
+
+template <typename A, typename B, typename Pred = std::ranges::equal_to>
+concept RangeComparable = requires(Pred pred, A a, B b) {
+    { std::ranges::equal(a, b, pred) } -> std::convertible_to<bool>;
+};
 
 template <typename> struct is_std_array : std::false_type { };
 template <typename T, std::size_t N> struct is_std_array<std::array<T, N>> : std::true_type { };
@@ -49,7 +75,7 @@ consteval void mixed_endianness_check()
                   "Mixed endianness architectures are not supported");
 }
 
-template <trivially_copyable T, byte_repr B = std::uint8_t>
+template <TriviallyCopyable T, ByteRepr B = std::uint8_t>
 constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
 {
     mixed_endianness_check();
@@ -76,7 +102,7 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
     return result;
 }
 
-template <trivially_copyable To, byte_repr B>
+template <TriviallyCopyable To, ByteRepr B>
 constexpr To from_bytes(const std::array<B, sizeof(To)> &from) noexcept
 {
     mixed_endianness_check();
@@ -91,7 +117,7 @@ constexpr To from_bytes(const std::array<B, sizeof(To)> &from) noexcept
     return std::bit_cast<To>(from);
 }
 
-template <arithmetic To, std::size_t N, byte_repr B>
+template <Arithmetic To, std::size_t N, ByteRepr B>
 constexpr std::array<To, N> array_from_bytes(const std::array<B, N * sizeof(To)> &from) noexcept
 {
     mixed_endianness_check();

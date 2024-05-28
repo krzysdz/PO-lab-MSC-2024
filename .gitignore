@@ -49,3 +49,6 @@ lab3/lab3
 *.arxt
 *.pid
 *.pidt
+
+# LibreOffice lock files
+.~lock*#
