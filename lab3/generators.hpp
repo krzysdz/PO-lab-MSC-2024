@@ -67,10 +67,22 @@ public:
     constexpr double symuluj(int time) override { return enabled_time(time) ? m_amplitude : 0.0; }
 };
 
-class GeneratorSinus : public GeneratorDecor {
-private:
+class GeneratorPeriodic : public GeneratorDecor {
+protected:
     uint32_t m_period;
 
+public:
+    constexpr GeneratorPeriodic(std::unique_ptr<Generator> &&base, double amplitude,
+                                uint32_t period, int t_start = 0, int t_end = 0)
+        : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
+        , m_period{ period }
+    {
+    }
+    constexpr void set_period(uint32_t period) noexcept { m_period = period; }
+};
+
+class GeneratorSinus : public GeneratorPeriodic {
+private:
     // std::sin is constexpr since C++26, but this is legal since C++23
     constexpr double simulate_internal(int time) override
     {
@@ -84,16 +96,13 @@ private:
 public:
     constexpr GeneratorSinus(std::unique_ptr<Generator> &&base, double amplitude, uint32_t period,
                              int t_start = 0, int t_end = 0)
-        : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
-        , m_period{ period }
+        : GeneratorPeriodic{ std::move(base), amplitude, period, t_start, t_end }
     {
     }
-    constexpr void set_period(uint32_t period) noexcept { m_period = period; }
 };
 
-class GeneratorProstokat : public GeneratorDecor {
+class GeneratorProstokat : public GeneratorPeriodic {
 private:
-    uint32_t m_period;
     double m_duty_cycle;
 
     constexpr void validate_duty_cycle() const
@@ -111,13 +120,11 @@ private:
 public:
     constexpr GeneratorProstokat(std::unique_ptr<Generator> &&base, double amplitude,
                                  uint32_t period, double duty_cycle, int t_start = 0, int t_end = 0)
-        : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
-        , m_period{ period }
+        : GeneratorPeriodic{ std::move(base), amplitude, period, t_start, t_end }
         , m_duty_cycle{ duty_cycle }
     {
         validate_duty_cycle();
     }
-    constexpr void set_period(uint32_t period) noexcept { m_period = period; }
     constexpr void set_duty_cycle(double duty_cycle)
     {
         m_duty_cycle = duty_cycle;
@@ -125,10 +132,8 @@ public:
     }
 };
 
-class GeneratorSawtooth : public GeneratorDecor {
+class GeneratorSawtooth : public GeneratorPeriodic {
 private:
-    uint32_t m_period;
-
     constexpr double simulate_internal(int time) override
     {
         return enabled_time(time)
@@ -139,11 +144,9 @@ private:
 public:
     constexpr GeneratorSawtooth(std::unique_ptr<Generator> &&base, double amplitude,
                                 uint32_t period, int t_start = 0, int t_end = 0)
-        : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
-        , m_period{ period }
+        : GeneratorPeriodic{ std::move(base), amplitude, period, t_start, t_end }
     {
     }
-    constexpr void set_period(uint32_t period) noexcept { m_period = period; }
 };
 
 template <std::uniform_random_bit_generator G, typename D>
