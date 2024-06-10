@@ -9,7 +9,9 @@
 #include <ostream>
 #include <ranges>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
+#include <vector>
 
 template <typename T>
 concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
@@ -81,6 +83,8 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
     mixed_endianness_check();
     static_assert(biendian_serializable_v<T> || std::endian::native == std::endian::little,
                   "Only little-endian architecture is supported for non-arithmetic types");
+    static_assert(!std::same_as<T, std::string_view>,
+                  "string_view is a pointer-length pair, not data");
 
     if constexpr (std::is_bounded_array_v<T>) {
         auto as_arr = std::to_array(data);
@@ -91,7 +95,7 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
         auto output_iter = result.begin();
         for (std::size_t i = 0; i < data.size(); ++i) {
             const auto converted_elem = to_bytes<typename T::value_type, B>(data[i]);
-            output_iter = std::copy_n(converted_elem.begin(), sizeof(converted_elem), output_iter);
+            output_iter = std::copy_n(converted_elem.begin(), sizeof converted_elem, output_iter);
         }
         return result;
     }
@@ -100,6 +104,12 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
     if constexpr (std::is_arithmetic_v<T> && std::endian::native == std::endian::big)
         std::ranges::reverse(result);
     return result;
+}
+
+template <typename R, ByteRepr B = std::uint8_t> constexpr std::vector<B> range_to_bytes(R &&r)
+{
+    return r | std::views::transform([](auto c) { return to_bytes(c); }) | std::views::join
+        | std::ranges::to<std::vector<B>>();
 }
 
 template <TriviallyCopyable To, ByteRepr B>
@@ -133,4 +143,28 @@ constexpr std::array<To, N> array_from_bytes(const std::array<B, N * sizeof(To)>
         }
     }
     return result;
+}
+
+// In C++26 there will be `views::concat` (https://wg21.link/P2542), which could be used e.g. with
+// `ranges::to` to do the same
+template <std::ranges::input_range A, std::ranges::input_range B,
+          std::ranges::input_range... Others>
+    requires std::same_as<std::ranges::range_value_t<A>, std::ranges::range_value_t<B>>
+constexpr std::vector<std::ranges::range_value_t<A>> concat_iterables(const A &a, const B &b,
+                                                                      const Others &...others)
+{
+    const auto s = std::ranges::size(a) + std::ranges::size(b);
+    std::vector<std::ranges::range_value_t<A>> result{};
+    result.reserve(s);
+#if __cpp_lib_containers_ranges >= 202202L
+    result.append_range(a);
+    result.append_range(b);
+#else
+    std::ranges::copy(a, std::back_inserter(result));
+    std::ranges::copy(b, std::back_inserter(result));
+#endif
+    if constexpr (sizeof...(Others) == 0UL)
+        return result;
+    else
+        return concat_iterables(result, others...);
 }
