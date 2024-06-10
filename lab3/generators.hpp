@@ -13,8 +13,8 @@
 
 class Generator;
 
-std::mt19937_64 __rng_eng{ std::random_device{}() };
-std::vector<std::pair<std::vector<std::uint8_t>,
+extern std::mt19937_64 __rng_eng;
+extern std::vector<std::pair<std::vector<std::uint8_t>,
                       std::unique_ptr<Generator> (*)(const std::vector<std::uint8_t> &)>>
     gen_serializers;
 #define DESERIALIZABLE_GEN(class_name)                                                             \

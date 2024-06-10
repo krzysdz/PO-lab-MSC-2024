@@ -1,11 +1,11 @@
 // clang-format off
 // To compile and test run:
 // - Clang (18+) with libc++:
-//      clang++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -fsanitize=address,undefined,leak -stdlib=libc++ -o lab3 lab3.cpp && ASAN_OPTIONS=alloc_dealloc_mismatch=0 ./lab3
+//      clang++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -fsanitize=address,undefined,leak -stdlib=libc++ -o lab3 lab3.cpp generators.cpp && ASAN_OPTIONS=alloc_dealloc_mismatch=0 ./lab3
 // - Clang (18+) with libstdc++:
-//      clang++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -fsanitize=address,undefined,leak -stdlib=libstdc++ -o lab3 lab3.cpp && ./lab3
+//      clang++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -fsanitize=address,undefined,leak -stdlib=libstdc++ -o lab3 lab3.cpp generators.cpp && ./lab3
 // - GCC (14+):
-//      g++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -Wno-unknown-pragmas -fsanitize=address,undefined,leak -o lab3 lab3.cpp && ./lab3
+//      g++ -std=c++23 -march=native -g -O2 -Wall -Wextra -Wpedantic -Wno-unknown-pragmas -fsanitize=address,undefined,leak -o lab3 lab3.cpp generators.cpp && ./lab3
 // clang-format on
 
 #include "generators.hpp"
