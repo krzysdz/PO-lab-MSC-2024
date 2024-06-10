@@ -373,6 +373,10 @@ public:
         : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
     {
     }
+    GeneratorRandomBase(const std::ranges::input_range auto &serialized)
+        : GeneratorDecor{ serialized }
+    {
+    }
 };
 
 class GeneratorUniformNoise : public GeneratorRandomBase<std::uniform_real_distribution<>> {
@@ -390,7 +394,26 @@ public:
                                                                  t_start, t_end }
     {
     }
+    GeneratorUniformNoise(const std::ranges::input_range auto &serialized)
+        : GeneratorRandomBase<std::uniform_real_distribution<>>{ std::ranges::drop_view{
+              serialized, unique_name.size() } }
+    {
+        if (!prefix_match(unique_name, serialized))
+            throw std::runtime_error{
+                "GeneratorUniformNoise serialized data does not start with expected prefix"
+            };
+    }
+    constexpr std::vector<uint8_t> dump() const override
+    {
+        return concat_iterables(range_to_bytes(unique_name), GeneratorDecor::dump());
+    }
+
+    friend bool operator==(const GeneratorUniformNoise &a, const GeneratorUniformNoise &b)
+    {
+        return a.eq(b);
+    }
 };
+DESERIALIZABLE_GEN(GeneratorUniformNoise);
 
 class GeneratorNormalNoise : public GeneratorRandomBase<std::normal_distribution<>> {
 private:
@@ -402,6 +425,11 @@ private:
     {
         return this->m_dist(__rng_eng, pt{ this->m_amplitude, m_stddev });
     }
+    bool eq(const Generator &b) const override
+    {
+        auto &bp = dynamic_cast<const GeneratorNormalNoise &>(b);
+        return GeneratorRandomBase<std::normal_distribution<>>::eq(bp) && m_stddev == bp.m_stddev;
+    }
 
 public:
     static constexpr std::string_view unique_name{ "rand_normal" };
@@ -411,6 +439,31 @@ public:
         , m_stddev{ stddev }
     {
     }
+    GeneratorNormalNoise(const std::ranges::input_range auto &serialized)
+        : GeneratorRandomBase<std::normal_distribution<>>{ std::ranges::drop_view{
+              serialized, unique_name.size() + sizeof m_stddev } }
+    {
+        if (!prefix_match(unique_name, serialized))
+            throw std::runtime_error{
+                "GeneratorNormalNoise serialized data does not start with expected prefix"
+            };
+
+        using B = std::ranges::range_value_t<decltype(serialized)>;
+        std::array<B, sizeof m_stddev> stddev_bytes;
+        std::ranges::drop_view remaining{ serialized, unique_name.size() };
+        std::ranges::copy_n(std::ranges::begin(remaining), sizeof m_stddev, stddev_bytes.begin());
+        m_stddev = from_bytes<decltype(m_stddev)>(stddev_bytes);
+    }
     constexpr void set_mean(double mean) { this->set_amplitude(mean); }
     constexpr void set_stddev(double stddev) { m_stddev = stddev; }
+    constexpr std::vector<uint8_t> dump() const override
+    {
+        return concat_iterables(range_to_bytes(unique_name), to_bytes(m_stddev), GeneratorDecor::dump());
+    }
+
+    friend bool operator==(const GeneratorNormalNoise &a, const GeneratorNormalNoise &b)
+    {
+        return a.eq(b);
+    }
 };
+DESERIALIZABLE_GEN(GeneratorNormalNoise);

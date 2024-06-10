@@ -161,13 +161,36 @@ class GeneratorTests {
                     "s1 == s2: {}; serialized1 == serialized2: {}", s1 == s2,
                     serialized1 == serialized2) };
         });
+        it_should_not_throw("GeneratorUniformNoise serialization", [] {
+            GeneratorUniformNoise u1{ std::make_unique<GeneratorBaza>(2.5, 1, 8), 1.75, 3, 100 };
+            const auto serialized1 = u1.dump();
+            GeneratorUniformNoise u2{ serialized1 };
+            const auto serialized2 = u2.dump();
+            if (u1 != u2 || serialized1 != serialized2)
+                throw std::runtime_error{ std::format(
+                    "u1 == u2: {}; serialized1 == serialized2: {}", u1 == u2,
+                    serialized1 == serialized2) };
+        });
+        it_should_not_throw("GeneratorNormalNoise serialization", [] {
+            GeneratorNormalNoise n1{ std::make_unique<GeneratorBaza>(2.5, 1, 8), 1.75, 0.243, 3,
+                                     100 };
+            const auto serialized1 = n1.dump();
+            GeneratorNormalNoise n2{ serialized1 };
+            const auto serialized2 = n2.dump();
+            if (n1 != n2 || serialized1 != serialized2)
+                throw std::runtime_error{ std::format(
+                    "n1 == n2: {}; serialized1 == serialized2: {}", n1 == n2,
+                    serialized1 == serialized2) };
+        });
         it_should_not_throw("Stacked serialization", [] {
             auto base = std::make_unique<GeneratorBaza>(2.5, 1, 8);
             auto saw = std::make_unique<GeneratorSawtooth>(std::move(base), 123.25, 87, 12, 398);
             auto sin = std::make_unique<GeneratorSinus>(std::move(saw), 2.125, 55, 1, 974);
             auto pwm
                 = std::make_unique<GeneratorProstokat>(std::move(sin), 63.75, 285, 0.75, 2, 645);
-            GeneratorSinus last{ std::move(pwm), 0.315, 4315, 75, 622 };
+            auto uni = std::make_unique<GeneratorUniformNoise>(std::move(pwm), 5.35, 35, 48);
+            auto norm = std::make_unique<GeneratorNormalNoise>(std::move(uni), 0.558, 1.6, 91, 834);
+            GeneratorSinus last{ std::move(norm), 0.315, 4315, 75, 622 };
             const auto serialized_last = last.dump();
             GeneratorSinus restored_last{ serialized_last };
             const auto serialized_restored = restored_last.dump();

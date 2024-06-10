@@ -106,7 +106,9 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
     return result;
 }
 
-template <typename R, ByteRepr B = std::uint8_t> constexpr std::vector<B> range_to_bytes(R &&r)
+template <typename R, ByteRepr B = std::uint8_t>
+    requires InputRangeOver<R, []<TriviallyCopyable> {}>
+constexpr std::vector<B> range_to_bytes(R &&r)
 {
     return r | std::views::transform([](auto c) { return to_bytes(c); }) | std::views::join
         | std::ranges::to<std::vector<B>>();
