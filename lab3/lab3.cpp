@@ -199,6 +199,23 @@ class GeneratorTests {
             if (serialized_last != serialized_restored)
                 throw std::runtime_error{ "serialized_last != serialized_restored" };
         });
+        it_should_not_throw("Stacked serialization - Generator::serialize()", [] {
+            auto base = std::make_unique<GeneratorBaza>(2.5, 1, 8);
+            auto saw = std::make_unique<GeneratorSawtooth>(std::move(base), 123.25, 87, 12, 398);
+            auto sin = std::make_unique<GeneratorSinus>(std::move(saw), 2.125, 55, 1, 974);
+            auto pwm
+                = std::make_unique<GeneratorProstokat>(std::move(sin), 63.75, 285, 0.75, 2, 645);
+            auto uni = std::make_unique<GeneratorUniformNoise>(std::move(pwm), 5.35, 35, 48);
+            auto norm = std::make_unique<GeneratorNormalNoise>(std::move(uni), 0.558, 1.6, 91, 834);
+            auto last = std::make_unique<GeneratorSinus>(std::move(norm), 0.315, 4315, 75, 622);
+            const auto serialized_last = last->dump();
+            auto restored_last = Generator::deserialize(serialized_last);
+            const auto serialized_restored = restored_last->dump();
+            if (*last != *restored_last)
+                throw std::runtime_error{ "*last != *restored_last" };
+            if (serialized_last != serialized_restored)
+                throw std::runtime_error{ "serialized_last != serialized_restored" };
+        });
     }
 
 public:

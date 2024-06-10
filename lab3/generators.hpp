@@ -117,6 +117,21 @@ public:
     }
     constexpr virtual ~Generator(){};
 
+    template <std::ranges::input_range T>
+        requires ByteRepr<std::ranges::range_value_t<T>>
+    static std::unique_ptr<Generator> deserialize(const T &serialized)
+    {
+        for (const auto &[name, factory] : gen_serializers) {
+#if __cpp_lib_ranges_starts_ends_with >= 202106L
+            if (std::ranges::starts_with(serialized, name))
+#else
+            if (std::ranges::mismatch(serialized, name).in2 == std::ranges::end(name))
+#endif
+                return factory(serialized);
+        }
+        throw std::runtime_error{ "Serialized data does not match any known generator." };
+    }
+
     friend bool operator==(const Generator &a, const Generator &b)
     {
         return typeid(a) == typeid(b) && a.eq(b);
@@ -149,14 +164,7 @@ public:
     {
         auto remaining = std::ranges::drop_view{ serialized, Generator::dump_size }
             | std::ranges::to<std::vector<std::uint8_t>>();
-        for (const auto &[name, factory] : gen_serializers) {
-#if __cpp_lib_ranges_starts_ends_with >= 202106L
-            if (std::ranges::starts_with(remaining, name))
-#else
-            if (std::ranges::mismatch(remaining, name).in2 == std::ranges::end(name))
-#endif
-                m_base = factory(remaining);
-        }
+        m_base = deserialize(remaining);
     }
     double symuluj(int time) override { return m_base->symuluj(time) + simulate_internal(time); }
     constexpr std::vector<uint8_t> dump() const override
@@ -458,7 +466,8 @@ public:
     constexpr void set_stddev(double stddev) { m_stddev = stddev; }
     constexpr std::vector<uint8_t> dump() const override
     {
-        return concat_iterables(range_to_bytes(unique_name), to_bytes(m_stddev), GeneratorDecor::dump());
+        return concat_iterables(range_to_bytes(unique_name), to_bytes(m_stddev),
+                                GeneratorDecor::dump());
     }
 
     friend bool operator==(const GeneratorNormalNoise &a, const GeneratorNormalNoise &b)
