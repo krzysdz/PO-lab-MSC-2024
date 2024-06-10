@@ -13,6 +13,7 @@
 
 class Generator;
 
+std::mt19937_64 __rng_eng{ std::random_device{}() };
 std::vector<std::pair<std::vector<std::uint8_t>,
                       std::unique_ptr<Generator> (*)(const std::vector<std::uint8_t> &)>>
     gen_serializers;
@@ -362,53 +363,36 @@ public:
 };
 DESERIALIZABLE_GEN(GeneratorSawtooth);
 
-template <std::uniform_random_bit_generator G, typename D>
-class GeneratorRandomBase : public GeneratorDecor {
+template <typename D> class GeneratorRandomBase : public GeneratorDecor {
 protected:
     D m_dist{};
-    std::shared_ptr<G> m_gen_p;
-
-    void validate_gen_ptr() const
-    {
-        if (!m_gen_p)
-            throw std::runtime_error{ "Pointer to generator is null" };
-    }
 
 public:
-    GeneratorRandomBase(std::unique_ptr<Generator> &&base, double amplitude,
-                        const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
+    GeneratorRandomBase(std::unique_ptr<Generator> &&base, double amplitude, int t_start = 0,
+                        int t_end = 0)
         : GeneratorDecor{ std::move(base), amplitude, t_start, t_end }
-        , m_gen_p{ gen_p }
     {
-        validate_gen_ptr();
-    }
-    void set_generator(std::shared_ptr<G> &gen_p)
-    {
-        m_gen_p = gen_p;
-        validate_gen_ptr();
     }
 };
 
-template <std::uniform_random_bit_generator G>
-class GeneratorUniformNoise : public GeneratorRandomBase<G, std::uniform_real_distribution<>> {
+class GeneratorUniformNoise : public GeneratorRandomBase<std::uniform_real_distribution<>> {
 private:
     double simulate_internal(int) override
     {
-        return this->m_amplitude * (this->m_dist(*this->m_gen_p) - 0.5);
+        return this->m_amplitude * (this->m_dist(__rng_eng) - 0.5);
     }
 
 public:
     static constexpr std::string_view unique_name{ "rand_uniform" };
-    GeneratorUniformNoise(std::unique_ptr<Generator> &&base, double amplitude,
-                          const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
-        : GeneratorRandomBase<G, std::uniform_real_distribution<>>{ std::move(base), amplitude,
-                                                                    gen_p, t_start, t_end }
+    GeneratorUniformNoise(std::unique_ptr<Generator> &&base, double amplitude, int t_start = 0,
+                          int t_end = 0)
+        : GeneratorRandomBase<std::uniform_real_distribution<>>{ std::move(base), amplitude,
+                                                                 t_start, t_end }
     {
     }
 };
 
-template <std::uniform_random_bit_generator G>
-class GeneratorNormalNoise : public GeneratorRandomBase<G, std::normal_distribution<>> {
+class GeneratorNormalNoise : public GeneratorRandomBase<std::normal_distribution<>> {
 private:
     using pt = std::normal_distribution<>::param_type;
 
@@ -416,15 +400,14 @@ private:
 
     double simulate_internal(int) override
     {
-        return this->m_dist(*this->m_gen_p, pt{ this->m_amplitude, m_stddev });
+        return this->m_dist(__rng_eng, pt{ this->m_amplitude, m_stddev });
     }
 
 public:
     static constexpr std::string_view unique_name{ "rand_normal" };
     GeneratorNormalNoise(std::unique_ptr<Generator> &&base, double mean, double stddev,
-                         const std::shared_ptr<G> &gen_p, int t_start = 0, int t_end = 0)
-        : GeneratorRandomBase<G, std::normal_distribution<>>{ std::move(base), mean, gen_p, t_start,
-                                                              t_end }
+                         int t_start = 0, int t_end = 0)
+        : GeneratorRandomBase<std::normal_distribution<>>{ std::move(base), mean, t_start, t_end }
         , m_stddev{ stddev }
     {
     }
