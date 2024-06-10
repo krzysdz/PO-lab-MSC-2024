@@ -116,10 +116,14 @@ void MainWindow::prepare_layout()
     main_columns_splitter->addWidget(widget_right);
     layout_right_col = new QVBoxLayout{ widget_right };
 
+    tabs_input = new QTabWidget { widget_right };
+    tabs_input->setTabPosition(QTabWidget::TabPosition::South);
+    layout_right_col->addWidget(tabs_input);
+
     // Inputs and simulation options
-    widget_inputs = new QWidget{ widget_right };
+    widget_inputs = new QWidget{ tabs_input };
     layout_inputs = new QGridLayout{ widget_inputs };
-    layout_right_col->addWidget(widget_inputs);
+    tabs_input->addTab(widget_inputs, "Manual");
 
     input_inputs = new QLineEdit{ widget_inputs };
     input_inputs->setValidator(coeff_validator);
@@ -136,6 +140,10 @@ void MainWindow::prepare_layout()
     button_simulate = new QPushButton{ "Simulate", widget_inputs };
     layout_inputs->addWidget(button_simulate, 1, 0);
     connect(button_simulate, &QPushButton::released, this, &MainWindow::simulate);
+
+    // Generators
+    widget_generators = new QWidget{ tabs_input };
+    tabs_input->addTab(widget_generators, "Generators");
 
     // Plot
     plot = new QChart{};

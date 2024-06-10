@@ -1,6 +1,8 @@
 #pragma once
 #include "../../lab1/ModelARX.h"
+#include "../../lab3/generators.hpp"
 #include "../RegulatorPID.h"
+#include "GeneratorsConfig.hpp"
 #include <QAction>
 #include <QChart>
 #include <QChartView>
@@ -15,6 +17,8 @@
 #include <QSpinBox>
 #include <QSplitter>
 #include <QVBoxLayout>
+#include <QTabWidget>
+#include <vector>
 #include <optional>
 
 class MainWindow : public QMainWindow {
@@ -30,6 +34,8 @@ private:
     QWidget *widget_right;
     QWidget *widget_parameters;
     QWidget *widget_inputs;
+    QWidget *widget_generators;
+    QTabWidget *tabs_input;
     QSplitter *main_columns_splitter;
     QFormLayout *layout_parameters;
     QVBoxLayout *layout_right_col;

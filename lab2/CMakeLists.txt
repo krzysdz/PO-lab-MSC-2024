@@ -21,6 +21,11 @@ if (MSVC)
 else()
     add_compile_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>" "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>")
     add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_compile_options(-stdlib=libc++)
+        add_link_options(-stdlib=libc++ -lc++abi)
+    endif()
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
@@ -29,9 +34,11 @@ qt_standard_project_setup()
 qt_add_executable(POlab2
     gui.cpp
     gui/MainWindow.cpp
+    gui/GeneratorsConfig.cpp
     RegulatorPID.cpp
     feedback_loop.cpp
     ../lab1/ModelARX.cpp
+    ../lab3/generators.cpp
 )
 
 target_link_libraries(POlab2 PRIVATE Qt6::Widgets Qt6::Charts)
