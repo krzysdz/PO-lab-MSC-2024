@@ -111,6 +111,7 @@ public:
     /// with different endianness
     /// @return Byte buffer containing all data necessary to restore the object
     std::vector<uint8_t> dump() const;
+    void reset();
 
     friend bool operator==(const ModelARX &, const ModelARX &) = default;
     friend bool operator!=(const ModelARX &, const ModelARX &) = default;

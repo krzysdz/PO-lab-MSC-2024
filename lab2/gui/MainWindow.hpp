@@ -16,10 +16,10 @@
 #include <QSessionManager>
 #include <QSpinBox>
 #include <QSplitter>
-#include <QVBoxLayout>
 #include <QTabWidget>
-#include <vector>
+#include <QVBoxLayout>
 #include <optional>
+#include <vector>
 
 class MainWindow : public QMainWindow {
 private:
@@ -34,7 +34,6 @@ private:
     QWidget *widget_right;
     QWidget *widget_parameters;
     QWidget *widget_inputs;
-    QWidget *widget_generators;
     QTabWidget *tabs_input;
     QSplitter *main_columns_splitter;
     QFormLayout *layout_parameters;
@@ -53,20 +52,26 @@ private:
     QLineEdit *input_inputs;
     QSpinBox *input_repetitions;
     QPushButton *button_simulate;
+    GeneratorsConfig *panel_generators;
 
     std::optional<RegulatorPID> regulator_opt;
     std::optional<ModelARX> model_opt;
     bool should_reset;
     std::vector<double> real_outputs;
     std::vector<double> given_inputs;
+    enum class sources { MANUAL, GENERATOR } last_source;
 
     void setup_ui();
     void prepare_menu_bar();
     void prepare_layout();
     std::vector<double> parse_coefficients(const QString &coeff_text);
     void configure_loop();
-    void simulate();
+    void simulate(const std::vector<double> &out_inputs);
     void plot_results();
+    void reset_sim(bool incl_generators = false);
+
+    void simulate_manual();
+    void simulate_gen(std::vector<double> inputs);
 
     void export_model();
     void export_pid();

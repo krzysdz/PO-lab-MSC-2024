@@ -62,7 +62,8 @@ inline void ModelARX::set_stddev(const double stddev)
 
 double ModelARX::symuluj(double u)
 {
-    m_in_signal_mem.pop_back();
+    if (m_in_signal_mem.size())
+        m_in_signal_mem.pop_back();
     m_in_signal_mem.push_front(m_delay_mem.back());
     m_delay_mem.pop_back();
     m_delay_mem.push_front(u);
@@ -72,7 +73,8 @@ double ModelARX::symuluj(double u)
                                           m_out_signal_mem.begin(), 0.0) };
     const double noise{ get_random() };
     const auto y{ b_poly - a_poly + noise };
-    m_out_signal_mem.pop_back();
+    if (m_out_signal_mem.size())
+        m_out_signal_mem.pop_back();
     m_out_signal_mem.push_front(y);
     return y;
 }
@@ -114,6 +116,16 @@ std::vector<uint8_t> ModelARX::dump() const
         throw std::runtime_error{ "Serialization is broken" };
 
     return serialized;
+}
+
+void ModelARX::reset()
+{
+    std::fill(m_in_signal_mem.begin(), m_in_signal_mem.end(), 0.0);
+    std::fill(m_out_signal_mem.begin(), m_out_signal_mem.end(), 0.0);
+    std::fill(m_delay_mem.begin(), m_delay_mem.end(), 0.0);
+    m_distribution.reset();
+    m_mt.seed(m_init_seed);
+    m_n_generated = 0;
 }
 
 #ifndef NO_LAB_TESTS

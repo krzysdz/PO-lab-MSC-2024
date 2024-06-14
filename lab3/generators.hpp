@@ -15,7 +15,7 @@ class Generator;
 
 extern std::mt19937_64 __rng_eng;
 extern std::vector<std::pair<std::vector<std::uint8_t>,
-                      std::unique_ptr<Generator> (*)(const std::vector<std::uint8_t> &)>>
+                             std::unique_ptr<Generator> (*)(const std::vector<std::uint8_t> &)>>
     gen_serializers;
 #define DESERIALIZABLE_GEN(class_name)                                                             \
     namespace {                                                                                    \
@@ -58,9 +58,9 @@ protected:
     {
         return (m_t_start == 0 && m_t_end == 0) || (time >= m_t_start && time <= m_t_end);
     }
-    constexpr void validate_time() const
+    static constexpr void validate_time(int t_start, int t_end)
     {
-        if (m_t_end < m_t_start)
+        if (t_end < t_start)
             throw std::runtime_error{ "t_end cannot be smaller than t_start" };
     }
     constexpr virtual bool eq(const Generator &b) const
@@ -74,7 +74,7 @@ public:
         , m_t_start{ t_start }
         , m_t_end{ t_end }
     {
-        validate_time();
+        validate_time(t_start, t_end);
     }
     template <std::ranges::input_range T>
         requires ByteRepr<std::ranges::range_value_t<T>>
@@ -98,12 +98,17 @@ public:
         m_t_start = ts;
         m_t_end = te;
     }
+    constexpr double get_amplitude() const noexcept { return m_amplitude; }
+    constexpr std::pair<int, int> get_activity_time() const noexcept
+    {
+        return { m_t_start, m_t_end };
+    }
     constexpr void set_amplitude(double amplitude) { m_amplitude = amplitude; }
     constexpr void set_activity_time(int t_start, int t_end)
     {
+        validate_time(t_start, t_end);
         m_t_start = t_start;
         m_t_end = t_end;
-        validate_time();
     }
     virtual double symuluj(int time) = 0;
     virtual constexpr std::vector<uint8_t> dump() const
@@ -171,6 +176,9 @@ public:
     {
         return concat_iterables(Generator::dump(), m_base->dump());
     }
+
+    // I don't want to make a getter for the pointer, so GeneratorsConfig must be a friend
+    friend class GeneratorsConfig;
 };
 
 class GeneratorBaza : public Generator {
@@ -228,6 +236,7 @@ public:
         std::ranges::copy_n(std::ranges::begin(serialized), sizeof m_period, period_bytes.begin());
         m_period = from_bytes<decltype(m_period)>(period_bytes);
     }
+    constexpr uint32_t get_period() const noexcept { return m_period; }
     constexpr void set_period(uint32_t period) noexcept { m_period = period; }
     constexpr std::vector<uint8_t> dump() const override
     {
@@ -275,9 +284,9 @@ class GeneratorProstokat : public GeneratorPeriodic {
 private:
     double m_duty_cycle;
 
-    constexpr void validate_duty_cycle() const
+    static constexpr void validate_duty_cycle(double duty_cycle)
     {
-        if (m_duty_cycle >= 1.0 || m_duty_cycle <= 0.0 || !std::isfinite(m_duty_cycle))
+        if (duty_cycle >= 1.0 || duty_cycle <= 0.0 || !std::isfinite(duty_cycle))
             throw std::runtime_error{ "Duty cycle should be between 0 and 1. If you want a "
                                       "constant signal use GeneratorBaza." };
     }
@@ -299,7 +308,7 @@ public:
         : GeneratorPeriodic{ std::move(base), amplitude, period, t_start, t_end }
         , m_duty_cycle{ duty_cycle }
     {
-        validate_duty_cycle();
+        validate_duty_cycle(duty_cycle);
     }
     constexpr GeneratorProstokat(const std::ranges::input_range auto &serialized)
         : GeneratorPeriodic{ std::ranges::drop_view{ serialized,
@@ -317,10 +326,11 @@ public:
                             duty_cycle_bytes.begin());
         m_duty_cycle = from_bytes<decltype(m_duty_cycle)>(duty_cycle_bytes);
     }
+    constexpr double get_duty_cycle() const noexcept { return m_duty_cycle; }
     constexpr void set_duty_cycle(double duty_cycle)
     {
+        validate_duty_cycle(duty_cycle);
         m_duty_cycle = duty_cycle;
-        validate_duty_cycle();
     }
     constexpr std::vector<uint8_t> dump() const override
     {
@@ -391,7 +401,7 @@ class GeneratorUniformNoise : public GeneratorRandomBase<std::uniform_real_distr
 private:
     double simulate_internal(int) override
     {
-        return this->m_amplitude * (this->m_dist(__rng_eng) - 0.5);
+        return 2.0 * this->m_amplitude * (this->m_dist(__rng_eng) - 0.5);
     }
 
 public:
@@ -462,7 +472,9 @@ public:
         std::ranges::copy_n(std::ranges::begin(remaining), sizeof m_stddev, stddev_bytes.begin());
         m_stddev = from_bytes<decltype(m_stddev)>(stddev_bytes);
     }
+    constexpr double get_mean() const noexcept { return get_amplitude(); }
     constexpr void set_mean(double mean) { this->set_amplitude(mean); }
+    constexpr double get_stddev() const noexcept { return m_stddev; }
     constexpr void set_stddev(double stddev) { m_stddev = stddev; }
     constexpr std::vector<uint8_t> dump() const override
     {

@@ -116,8 +116,9 @@ void MainWindow::prepare_layout()
     main_columns_splitter->addWidget(widget_right);
     layout_right_col = new QVBoxLayout{ widget_right };
 
-    tabs_input = new QTabWidget { widget_right };
+    tabs_input = new QTabWidget{ widget_right };
     tabs_input->setTabPosition(QTabWidget::TabPosition::South);
+    tabs_input->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
     layout_right_col->addWidget(tabs_input);
 
     // Inputs and simulation options
@@ -139,11 +140,13 @@ void MainWindow::prepare_layout()
 
     button_simulate = new QPushButton{ "Simulate", widget_inputs };
     layout_inputs->addWidget(button_simulate, 1, 0);
-    connect(button_simulate, &QPushButton::released, this, &MainWindow::simulate);
+    connect(button_simulate, &QPushButton::released, this, &MainWindow::simulate_manual);
 
     // Generators
-    widget_generators = new QWidget{ tabs_input };
-    tabs_input->addTab(widget_generators, "Generators");
+    panel_generators = new GeneratorsConfig{ tabs_input };
+    connect(panel_generators, &GeneratorsConfig::simulated, this, &MainWindow::simulate_gen);
+    connect(panel_generators, &GeneratorsConfig::cleared, this, [this]() { this->reset_sim(); });
+    tabs_input->addTab(panel_generators, "Generators");
 
     // Plot
     plot = new QChart{};
@@ -183,9 +186,10 @@ void MainWindow::configure_loop()
     model_opt.emplace(std::move(coeff_a), std::move(coeff_b), delay, stddev);
     regulator_opt.emplace(k, Ti, Td);
     should_reset = true;
+    panel_generators->reset_sim();
 }
 
-void MainWindow::simulate()
+void MainWindow::simulate(const std::vector<double> &out_inputs)
 {
     if (!regulator_opt.has_value() || !model_opt.has_value()) {
         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
@@ -202,8 +206,15 @@ void MainWindow::simulate()
         real_outputs.clear();
         given_inputs.clear();
     }
-    const auto inputs = parse_coefficients(input_inputs->text());
-    const auto repetitions = input_repetitions->value();
+    std::vector<double> inputs;
+    int repetitions;
+    if (out_inputs.size()) {
+        inputs = out_inputs;
+        repetitions = 1;
+    } else {
+        inputs = parse_coefficients(input_inputs->text());
+        repetitions = input_repetitions->value();
+    }
     for (int i = 0; i < repetitions; ++i) {
         for (const auto &input : inputs) {
             const auto out
@@ -240,6 +251,35 @@ void MainWindow::plot_results()
     plot->addSeries(results_series);
     plot->addSeries(inputs_series);
     plot->createDefaultAxes();
+}
+
+void MainWindow::reset_sim(bool incl_generators)
+{
+    if (incl_generators)
+        panel_generators->reset_sim();
+    should_reset = true;
+    if (model_opt && regulator_opt) {
+        model_opt->reset();
+        regulator_opt->reset();
+    }
+}
+
+void MainWindow::simulate_manual()
+{
+    if (last_source != sources::MANUAL)
+        reset_sim(true);
+
+    last_source = sources::MANUAL;
+    simulate({});
+}
+
+void MainWindow::simulate_gen(std::vector<double> inputs)
+{
+    if (last_source != sources::GENERATOR)
+        reset_sim();
+
+    last_source = sources::GENERATOR;
+    simulate(inputs);
 }
 
 void MainWindow::export_model()

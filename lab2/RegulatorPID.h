@@ -89,6 +89,11 @@ public:
         auto bytes = to_bytes(std::array{ m_k, m_ti, m_td, m_integral, m_prev_e });
         return std::vector(bytes.begin(), bytes.end());
     }
+    constexpr void reset() noexcept
+    {
+        m_integral = 0.0;
+        m_prev_e = 0.0;
+    }
 
     friend bool operator==(const RegulatorPID &, const RegulatorPID &) = default;
     friend bool operator!=(const RegulatorPID &, const RegulatorPID &) = default;
