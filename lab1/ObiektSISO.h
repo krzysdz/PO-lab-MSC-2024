@@ -4,6 +4,7 @@
 
 class ObiektSISO {
 public:
+    virtual void reset() { }
     virtual double symuluj(double u) = 0;
     virtual ~ObiektSISO() = default;
 
