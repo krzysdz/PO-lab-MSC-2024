@@ -20,6 +20,7 @@
 #include <QVBoxLayout>
 #include <optional>
 #include <vector>
+#include "../../lab4/PętlaUAR.hpp"
 
 class MainWindow : public QMainWindow {
 private:
@@ -43,6 +44,10 @@ private:
     QDoubleSpinBox *input_pid_k;
     QDoubleSpinBox *input_pid_ti;
     QDoubleSpinBox *input_pid_td;
+    QDoubleSpinBox *input_static_x1;
+    QDoubleSpinBox *input_static_y1;
+    QDoubleSpinBox *input_static_x2;
+    QDoubleSpinBox *input_static_y2;
     QSpinBox *input_arx_delay;
     QDoubleSpinBox *input_arx_stddev;
     QLineEdit *input_arx_coeff_a;
@@ -54,9 +59,7 @@ private:
     QPushButton *button_simulate;
     GeneratorsConfig *panel_generators;
 
-    std::optional<RegulatorPID> regulator_opt;
-    std::optional<ModelARX> model_opt;
-    bool should_reset;
+    PętlaUAR loop{};
     std::vector<double> real_outputs;
     std::vector<double> given_inputs;
     enum class sources { MANUAL, GENERATOR } last_source;
@@ -73,10 +76,10 @@ private:
     void simulate_manual();
     void simulate_gen(std::vector<double> inputs);
 
-    void export_model();
-    void export_pid();
-    void import_model();
-    void import_pid();
+    // void export_model();
+    // void export_pid();
+    // void import_model();
+    // void import_pid();
 
 public:
     explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags())

@@ -1,5 +1,6 @@
 #include "MainWindow.hpp"
 #include "../feedback_loop.hpp"
+#include "../../lab4/ObiektStatyczny.hpp"
 #include <QApplication>
 #include <QDir>
 #include <QFileDialog>
@@ -23,23 +24,23 @@ void MainWindow::prepare_menu_bar()
 {
     menu_file = menuBar()->addMenu("&File");
 
-    // Export
-    submenu_export = menu_file->addMenu("Export");
+    // // Export
+    // submenu_export = menu_file->addMenu("Export");
 
-    action_export_model = submenu_export->addAction("ARX model");
-    connect(action_export_model, &QAction::triggered, this, &MainWindow::export_model);
+    // action_export_model = submenu_export->addAction("ARX model");
+    // connect(action_export_model, &QAction::triggered, this, &MainWindow::export_model);
 
-    action_export_pid = submenu_export->addAction("PID regulator");
-    connect(action_export_pid, &QAction::triggered, this, &MainWindow::export_pid);
+    // action_export_pid = submenu_export->addAction("PID regulator");
+    // connect(action_export_pid, &QAction::triggered, this, &MainWindow::export_pid);
 
-    // Import
-    submenu_import = menu_file->addMenu("Import");
+    // // Import
+    // submenu_import = menu_file->addMenu("Import");
 
-    action_import_model = submenu_import->addAction("ARX model");
-    connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
+    // action_import_model = submenu_import->addAction("ARX model");
+    // connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
 
-    action_import_pid = submenu_import->addAction("PID regulator");
-    connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_pid);
+    // action_import_pid = submenu_import->addAction("PID regulator");
+    // connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_pid);
 
     // Others
     action_exit = menu_file->addAction("Exit");
@@ -75,13 +76,42 @@ void MainWindow::prepare_layout()
     input_pid_td->setMinimum(0.0);
     layout_parameters->addRow("Td", input_pid_td);
 
-    const auto param_sep = new QFrame{ widget_parameters };
-    param_sep->setFrameShape(QFrame::Shape::HLine);
-    param_sep->setFrameShadow(QFrame::Shadow::Sunken);
-    layout_parameters->setWidget(4, QFormLayout::ItemRole::SpanningRole, param_sep);
+    const auto param_sep1 = new QFrame{ widget_parameters };
+    param_sep1->setFrameShape(QFrame::Shape::HLine);
+    param_sep1->setFrameShadow(QFrame::Shadow::Sunken);
+    layout_parameters->setWidget(4, QFormLayout::ItemRole::SpanningRole, param_sep1);
+
+    const auto obiekt_statyczny_label = new QLabel{"<b>ObiektStatyczny parameters</b>", widget_parameters};
+    layout_parameters->setWidget(5, QFormLayout::ItemRole::SpanningRole, obiekt_statyczny_label);
+
+    input_static_x1 = new QDoubleSpinBox{widget_parameters};
+    input_static_x1->setSingleStep(0.1);
+    input_static_x1->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_x1->setValue(-1.0);
+    layout_parameters->addRow("x1", input_static_x1);
+    input_static_y1 = new QDoubleSpinBox{widget_parameters};
+    input_static_y1->setSingleStep(0.1);
+    input_static_y1->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_y1->setValue(-1.0);
+    layout_parameters->addRow("y1", input_static_y1);
+    input_static_x2 = new QDoubleSpinBox{widget_parameters};
+    input_static_x2->setSingleStep(0.1);
+    input_static_x2->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_x2->setValue(1.0);
+    layout_parameters->addRow("x2", input_static_x2);
+    input_static_y2 = new QDoubleSpinBox{widget_parameters};
+    input_static_y2->setSingleStep(0.1);
+    input_static_y2->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_y2->setValue(1.0);
+    layout_parameters->addRow("y2", input_static_y2);
+
+    const auto param_sep2 = new QFrame{ widget_parameters };
+    param_sep2->setFrameShape(QFrame::Shape::HLine);
+    param_sep2->setFrameShadow(QFrame::Shadow::Sunken);
+    layout_parameters->setWidget(10, QFormLayout::ItemRole::SpanningRole, param_sep2);
 
     const auto arx_label = new QLabel{ "<b>ARX parameters</b>", widget_parameters };
-    layout_parameters->setWidget(5, QFormLayout::ItemRole::SpanningRole, arx_label);
+    layout_parameters->setWidget(11, QFormLayout::ItemRole::SpanningRole, arx_label);
 
     input_arx_delay = new QSpinBox{ widget_parameters };
     input_arx_delay->setMinimum(1);
@@ -108,7 +138,7 @@ void MainWindow::prepare_layout()
 
     button_apply_params = new QPushButton{ "Apply parameters", widget_parameters };
     button_apply_params->setToolTip("Create a new feedback loop model with provided parameters");
-    layout_parameters->setWidget(10, QFormLayout::ItemRole::SpanningRole, button_apply_params);
+    layout_parameters->setWidget(16, QFormLayout::ItemRole::SpanningRole, button_apply_params);
     connect(button_apply_params, &QPushButton::released, this, &MainWindow::configure_loop);
 
     // Right part of the window
@@ -176,6 +206,7 @@ std::vector<double> MainWindow::parse_coefficients(const QString &coeff_text)
 
 void MainWindow::configure_loop()
 {
+    using p = ObiektStatyczny::point;
     auto coeff_a = parse_coefficients(input_arx_coeff_a->text());
     auto coeff_b = parse_coefficients(input_arx_coeff_b->text());
     const auto delay = input_arx_delay->value();
@@ -183,28 +214,24 @@ void MainWindow::configure_loop()
     const auto k = input_pid_k->value();
     const auto Ti = input_pid_ti->value();
     const auto Td = input_pid_td->value();
-    model_opt.emplace(std::move(coeff_a), std::move(coeff_b), delay, stddev);
-    regulator_opt.emplace(k, Ti, Td);
-    should_reset = true;
-    panel_generators->reset_sim();
+    const auto x1 = input_static_x1->value();
+    const auto y1 = input_static_y1->value();
+    const auto x2 = input_static_x2->value();
+    const auto y2 = input_static_y2->value();
+    loop.clear();
+    loop.insert(0, std::make_unique<ModelARX>(std::move(coeff_a), std::move(coeff_b), delay, stddev), std::make_unique<ObiektStatyczny>(p{x1, y1}, p{x2, y2}), std::make_unique<RegulatorPID>(k, Ti, Td));
+    reset_sim(true);
 }
 
 void MainWindow::simulate(const std::vector<double> &out_inputs)
 {
-    if (!regulator_opt.has_value() || !model_opt.has_value()) {
+    if (loop.size() == 0) {
         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
                                  "Enter correct model and regulator parameters and click the "
                                  "<b>Apply parameters</b> button before simulating",
                                  QMessageBox::StandardButton::Close };
         message_box.exec();
         return;
-    }
-    std::optional<double> reset_opt{};
-    if (should_reset) {
-        reset_opt = 0.0;
-        should_reset = false;
-        real_outputs.clear();
-        given_inputs.clear();
     }
     std::vector<double> inputs;
     int repetitions;
@@ -217,10 +244,8 @@ void MainWindow::simulate(const std::vector<double> &out_inputs)
     }
     for (int i = 0; i < repetitions; ++i) {
         for (const auto &input : inputs) {
-            const auto out
-                = feedback_step(regulator_opt.value(), model_opt.value(), input, reset_opt);
+            const auto out = loop.symuluj(input);
             real_outputs.push_back(out);
-            reset_opt.reset();
         }
 #if __cpp_lib_containers_ranges >= 202202L
         // This works with libc++, but it does not currently implement the
@@ -257,11 +282,9 @@ void MainWindow::reset_sim(bool incl_generators)
 {
     if (incl_generators)
         panel_generators->reset_sim();
-    should_reset = true;
-    if (model_opt && regulator_opt) {
-        model_opt->reset();
-        regulator_opt->reset();
-    }
+    real_outputs.clear();
+    given_inputs.clear();
+    loop.reset();
 }
 
 void MainWindow::simulate_manual()
@@ -282,119 +305,119 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
     simulate(inputs);
 }
 
-void MainWindow::export_model()
-{
-    if (!model_opt.has_value()) {
-        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-                                 "Model is not defined. Make sure to click <b>Apply parameters</b> "
-                                 "button before exporting.",
-                                 QMessageBox::StandardButton::Close };
-        message_box.exec();
-        return;
-    }
+// void MainWindow::export_model()
+// {
+//     if (!model_opt.has_value()) {
+//         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+//                                  "Model is not defined. Make sure to click <b>Apply parameters</b> "
+//                                  "button before exporting.",
+//                                  QMessageBox::StandardButton::Close };
+//         message_box.exec();
+//         return;
+//     }
 
-    QString filter{ "ARX binary model (*.arx);;ARX text model (*.arxt)" };
-    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
-                                                       QDir::currentPath(), filter, &filter)
-                              .toStdU16String();
-    if (filename.empty())
-        return;
-    fs::path path{ filename };
-    const auto ext = path.extension();
-    if (ext != ".arx" && ext != ".arxt")
-        path.replace_extension(".arx");
-    if (filename.back() == u't') {
-        std::ofstream out{ path, std::ios::out | std::ios::trunc };
-        out << model_opt.value();
-    } else {
-        const auto dump = model_opt->dump();
-        std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-        out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-        out.flush();
-    }
-}
+//     QString filter{ "ARX binary model (*.arx);;ARX text model (*.arxt)" };
+//     const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+//                                                        QDir::currentPath(), filter, &filter)
+//                               .toStdU16String();
+//     if (filename.empty())
+//         return;
+//     fs::path path{ filename };
+//     const auto ext = path.extension();
+//     if (ext != ".arx" && ext != ".arxt")
+//         path.replace_extension(".arx");
+//     if (filename.back() == u't') {
+//         std::ofstream out{ path, std::ios::out | std::ios::trunc };
+//         out << model_opt.value();
+//     } else {
+//         const auto dump = model_opt->dump();
+//         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+//         out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+//         out.flush();
+//     }
+// }
 
-void MainWindow::export_pid()
-{
-    if (!regulator_opt.has_value()) {
-        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-                                 "Regulator is not defined. Make sure to click <b>Apply "
-                                 "parameters</b> button before exporting.",
-                                 QMessageBox::StandardButton::Close };
-        message_box.exec();
-        return;
-    }
+// void MainWindow::export_pid()
+// {
+//     if (!regulator_opt.has_value()) {
+//         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+//                                  "Regulator is not defined. Make sure to click <b>Apply "
+//                                  "parameters</b> button before exporting.",
+//                                  QMessageBox::StandardButton::Close };
+//         message_box.exec();
+//         return;
+//     }
 
-    QString filter{ "PID binary model (*.pid);;PID text model (*.pidt)" };
-    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
-                                                       QDir::currentPath(), filter, &filter)
-                              .toStdU16String();
-    if (filename.empty())
-        return;
-    fs::path path{ filename };
-    const auto ext = path.extension();
-    if (ext != ".pid" && ext != ".pidt")
-        path.replace_extension(".pid");
-    if (filename.back() == u't') {
-        std::ofstream out{ path, std::ios::out | std::ios::trunc };
-        out << regulator_opt.value();
-    } else {
-        const auto dump = regulator_opt->dump();
-        std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-        out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-        out.flush();
-    }
-}
+//     QString filter{ "PID binary model (*.pid);;PID text model (*.pidt)" };
+//     const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+//                                                        QDir::currentPath(), filter, &filter)
+//                               .toStdU16String();
+//     if (filename.empty())
+//         return;
+//     fs::path path{ filename };
+//     const auto ext = path.extension();
+//     if (ext != ".pid" && ext != ".pidt")
+//         path.replace_extension(".pid");
+//     if (filename.back() == u't') {
+//         std::ofstream out{ path, std::ios::out | std::ios::trunc };
+//         out << regulator_opt.value();
+//     } else {
+//         const auto dump = regulator_opt->dump();
+//         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+//         out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+//         out.flush();
+//     }
+// }
 
-void MainWindow::import_model()
-{
-    const auto filename = QFileDialog::getOpenFileName(
-        this, "Select ARX model file", QDir::currentPath(),
-        "ARX model (*.arx *.arxt);;ARX binary model (*.arx);;ARX text model (*.arxt)");
-    if (filename.isEmpty())
-        return;
-    const fs::path path{ filename.toStdU16String() };
-    if (filename.back() == u't') {
-        std::ifstream in{ path };
-        ModelARX m{ {}, {}, 1 };
-        in >> m;
-        model_opt = std::move(m);
-    } else {
-        std::ifstream in{ path, std::ios::binary };
-        in.seekg(0, std::ios::end);
-        const auto file_size = in.tellg();
-        in.seekg(0, std::ios::beg);
-        const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
-        in.read(reinterpret_cast<char *>(buff.get()), file_size);
-        in.close();
-        model_opt.emplace(buff.get(), buff.get() + file_size);
-    }
-}
+// void MainWindow::import_model()
+// {
+//     const auto filename = QFileDialog::getOpenFileName(
+//         this, "Select ARX model file", QDir::currentPath(),
+//         "ARX model (*.arx *.arxt);;ARX binary model (*.arx);;ARX text model (*.arxt)");
+//     if (filename.isEmpty())
+//         return;
+//     const fs::path path{ filename.toStdU16String() };
+//     if (filename.back() == u't') {
+//         std::ifstream in{ path };
+//         ModelARX m{ {}, {}, 1 };
+//         in >> m;
+//         model_opt = std::move(m);
+//     } else {
+//         std::ifstream in{ path, std::ios::binary };
+//         in.seekg(0, std::ios::end);
+//         const auto file_size = in.tellg();
+//         in.seekg(0, std::ios::beg);
+//         const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+//         in.read(reinterpret_cast<char *>(buff.get()), file_size);
+//         in.close();
+//         model_opt.emplace(buff.get(), buff.get() + file_size);
+//     }
+// }
 
-void MainWindow::import_pid()
-{
-    const auto filename = QFileDialog::getOpenFileName(
-        this, "Select PID regulator file", QDir::currentPath(),
-        "PID regulator (*.pid *.pidt);;PID binary model (*.pid);;PID text model (*.pidt)");
-    if (filename.isEmpty())
-        return;
-    const fs::path path{ filename.toStdU16String() };
-    if (filename.back() == u't') {
-        std::ifstream in{ path };
-        RegulatorPID pid{ 0 };
-        in >> pid;
-        regulator_opt = std::move(pid);
-    } else {
-        std::ifstream in{ path, std::ios::binary };
-        in.seekg(0, std::ios::end);
-        const auto file_size = in.tellg();
-        in.seekg(0, std::ios::beg);
-        const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
-        in.read(reinterpret_cast<char *>(buff.get()), file_size);
-        in.close();
-        regulator_opt.emplace(buff.get(), buff.get() + file_size);
-    }
-}
+// void MainWindow::import_pid()
+// {
+//     const auto filename = QFileDialog::getOpenFileName(
+//         this, "Select PID regulator file", QDir::currentPath(),
+//         "PID regulator (*.pid *.pidt);;PID binary model (*.pid);;PID text model (*.pidt)");
+//     if (filename.isEmpty())
+//         return;
+//     const fs::path path{ filename.toStdU16String() };
+//     if (filename.back() == u't') {
+//         std::ifstream in{ path };
+//         RegulatorPID pid{ 0 };
+//         in >> pid;
+//         regulator_opt = std::move(pid);
+//     } else {
+//         std::ifstream in{ path, std::ios::binary };
+//         in.seekg(0, std::ios::end);
+//         const auto file_size = in.tellg();
+//         in.seekg(0, std::ios::beg);
+//         const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+//         in.read(reinterpret_cast<char *>(buff.get()), file_size);
+//         in.close();
+//         regulator_opt.emplace(buff.get(), buff.get() + file_size);
+//     }
+// }
 
 void MainWindow::start()
 {

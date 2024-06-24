@@ -2,7 +2,7 @@
 
 void PętlaUAR::reset(double init_val)
 {
-    set_init(0.0);
+    set_init(init_val);
     for (auto &e : m_loop) {
         e->reset();
     }

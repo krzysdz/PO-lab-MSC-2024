@@ -39,6 +39,7 @@ qt_add_executable(POlab2
     feedback_loop.cpp
     ../lab1/ModelARX.cpp
     ../lab3/generators.cpp
+    ../lab4/PętlaUAR.cpp
 )
 
 target_link_libraries(POlab2 PRIVATE Qt6::Widgets Qt6::Charts)

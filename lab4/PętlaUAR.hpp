@@ -16,14 +16,15 @@ private:
     }
 
 public:
-    constexpr PętlaUAR(bool closed = false, double init_val = 0.0)
+    constexpr PętlaUAR(bool closed = true, double init_val = 0.0)
         : m_closed{ closed }
         , m_prev_result{ init_val }
     {
     }
-    void reset(double init_val = 0.0);
+    void reset(double init_val);
     void reset() override { reset(0.0); };
     double symuluj(double u) override;
+    constexpr void clear() noexcept { m_loop.clear(); }
     constexpr std::size_t size() const noexcept { return m_loop.size(); }
     constexpr void set_init(double init_val) noexcept { m_prev_result = init_val; }
     constexpr void set_closed(bool closed) noexcept { m_closed = closed; }
@@ -50,7 +51,7 @@ public:
     {
         const auto ins_idx = insert(index, std::move(value));
         if constexpr (sizeof...(Args)) {
-            insert(ins_idx + 1, std::forward(args)...);
+            insert(ins_idx + 1, std::forward<Args>(args)...);
         }
         return ins_idx;
     }
