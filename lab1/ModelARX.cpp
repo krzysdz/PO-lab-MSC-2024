@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -81,6 +80,7 @@ double ModelARX::symuluj(double u)
 
 std::vector<uint8_t> ModelARX::dump() const
 {
+    const std::size_t prefix_size = unique_name.size() * sizeof(decltype(unique_name)::value_type);
     const uint64_t n_coeff_a{ m_coeff_a.size() };
     const uint64_t n_coeff_b{ m_coeff_b.size() };
     const uint64_t in_n{ m_in_signal_mem.size() };
@@ -92,12 +92,18 @@ std::vector<uint8_t> ModelARX::dump() const
     const raw_data_t raw{ n_coeff_a, n_coeff_b, dist_mean,   dist_stddev,  in_n,
                           out_n,     delay_n,   m_init_seed, m_n_generated };
     // Prepare the output buffer and check some assumptions about its size
-    std::size_t dump_size{ (n_coeff_a + n_coeff_b + in_n + out_n + delay_n) * 8 + sizeof(raw) };
+    const std::size_t dump_size{ (n_coeff_a + n_coeff_b + in_n + out_n + delay_n) * 8 + sizeof(raw)
+                                 + prefix_size };
+    const auto len_b = to_bytes(static_cast<uint32_t>(dump_size));
     static_assert(sizeof(raw) == 9U * 8U);
     static_assert(sizeof(double) == 8U);
-    std::vector<uint8_t> serialized(dump_size);
+    std::vector<uint8_t> serialized(dump_size + sizeof(uint32_t));
     // Write everything to the buffer
     auto out_ptr{ serialized.data() };
+    std::memcpy(out_ptr, len_b.data(), sizeof(uint32_t));
+    out_ptr += sizeof(uint32_t);
+    std::memcpy(out_ptr, unique_name.data(), prefix_size);
+    out_ptr += prefix_size;
     std::memcpy(out_ptr, reinterpret_cast<const uint8_t *>(&raw), sizeof(raw));
     out_ptr += sizeof(raw);
     std::memcpy(out_ptr, reinterpret_cast<const uint8_t *>(m_coeff_a.data()), n_coeff_a * 8);

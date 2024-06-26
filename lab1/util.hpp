@@ -85,6 +85,7 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
                   "Only little-endian architecture is supported for non-arithmetic types");
     static_assert(!std::same_as<T, std::string_view>,
                   "string_view is a pointer-length pair, not data");
+    static_assert(sizeof(std::array<B, sizeof(T)>) == sizeof(B[sizeof(T)]));
 
     if constexpr (std::is_bounded_array_v<T>) {
         auto as_arr = std::to_array(data);
@@ -106,8 +107,9 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
     return result;
 }
 
-template <typename R, ByteRepr B = std::uint8_t>
-    requires InputRangeOver<R, []<TriviallyCopyable> {}>
+template <std::ranges::input_range R, ByteRepr B = std::uint8_t>
+// requires InputRangeOver<R, []<TriviallyCopyable> {}> // C/C++ extension in VS Code complains
+    requires TriviallyCopyable<std::ranges::range_value_t<R>>
 constexpr std::vector<B> range_to_bytes(R &&r)
 {
     return r | std::views::transform([](auto c) { return to_bytes(c); }) | std::views::join
@@ -120,6 +122,7 @@ constexpr To from_bytes(const std::array<B, sizeof(To)> &from) noexcept
     mixed_endianness_check();
     static_assert(std::is_arithmetic_v<To> || std::endian::native == std::endian::little,
                   "Only little-endian architecture is supported for non-arithmetic types");
+    static_assert(sizeof(std::array<B, sizeof(To)>) == sizeof(B[sizeof(To)]));
 
     if constexpr (std::is_arithmetic_v<To> && std::endian::native == std::endian::big) {
         std::array<B, sizeof(To)> reversed(from);
@@ -133,6 +136,7 @@ template <Arithmetic To, std::size_t N, ByteRepr B>
 constexpr std::array<To, N> array_from_bytes(const std::array<B, N * sizeof(To)> &from) noexcept
 {
     mixed_endianness_check();
+    static_assert(sizeof(std::array<B, N * sizeof(To)>) == sizeof(B[N * sizeof(To)]));
 
     auto result = std::bit_cast<std::array<To, N>>(from);
     if constexpr (std::endian::native == std::endian::big) {
@@ -145,6 +149,19 @@ constexpr std::array<To, N> array_from_bytes(const std::array<B, N * sizeof(To)>
         }
     }
     return result;
+}
+
+template <TriviallyCopyable To, std::ranges::input_range R>
+    requires ByteRepr<std::ranges::range_value_t<R>>
+constexpr To from_byte_range(const R &from)
+{
+    using B = std::ranges::range_value_t<R>;
+    if (std::ranges::size(from) < sizeof(To))
+        throw std::runtime_error{ "Range is too short for the type" };
+
+    std::array<B, sizeof(To)> tmp{};
+    std::ranges::copy_n(std::ranges::cbegin(from), sizeof(To), tmp.begin());
+    return from_bytes<To>(tmp);
 }
 
 // In C++26 there will be `views::concat` (https://wg21.link/P2542), which could be used e.g. with
@@ -169,4 +186,19 @@ constexpr std::vector<std::ranges::range_value_t<A>> concat_iterables(const A &a
         return result;
     else
         return concat_iterables(result, others...);
+}
+
+template <std::ranges::input_range T>
+    requires ByteRepr<std::ranges::range_value_t<T>>
+constexpr bool prefix_match(const std::string_view prefix, const T &bin_data)
+{
+    if (std::ranges::size(bin_data) < prefix.size())
+        return false;
+    const auto prefix_bin = std::views::transform(
+        prefix, [](const char c) constexpr { return static_cast<std::uint8_t>(c); });
+#if __cpp_lib_ranges_starts_ends_with >= 202106L
+    return std::ranges::starts_with(bin_data, prefix_bin);
+#else
+    return std::ranges::mismatch(bin_data, prefix_bin).in2 == std::ranges::end(prefix_bin);
+#endif
 }

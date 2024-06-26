@@ -7,7 +7,12 @@
 #include <vector>
 
 class RegulatorPID : public ObiektSISO {
+public:
+    static constexpr std::string_view unique_name{ "rPID" };
+
 private:
+    static constexpr std::size_t prefix_size{ unique_name.size()
+                                              * sizeof(decltype(unique_name)::value_type) };
     double m_k;
     double m_ti;
     double m_td;
@@ -43,13 +48,20 @@ public:
         && std::is_same_v<typename std::iterator_traits<Iter>::value_type, uint8_t>
     constexpr RegulatorPID(Iter start, Iter end)
     {
-        constexpr std::size_t expected_size = 40UL;
+        constexpr std::size_t len_size = sizeof(uint32_t);
+        constexpr std::size_t expected_data_size = 40UL;
+        constexpr std::size_t expected_total_size = expected_data_size + prefix_size + len_size;
         const auto data_size{ std::distance(start, end) };
-        if (data_size < static_cast<std::ptrdiff_t>(expected_size))
+        if (data_size < static_cast<std::ptrdiff_t>(expected_total_size))
             throw std::runtime_error{ "Data size is smaller than expected" };
 
-        std::array<uint8_t, expected_size> byte_array;
-        std::copy_n(start, expected_size, byte_array.begin());
+        if (!prefix_match(unique_name, std::ranges::subrange{ start + len_size, end }))
+            throw std::runtime_error{
+                "RegulatorPID serialized data does not start with the expected prefix"
+            };
+
+        std::array<uint8_t, expected_data_size> byte_array;
+        std::copy_n(start + prefix_size + len_size, expected_data_size, byte_array.begin());
         const auto [k, ti, td, integral, prev_e] = array_from_bytes<double, 5UL>(byte_array);
         m_k = k;
         m_ti = ti;
@@ -84,10 +96,11 @@ public:
     {
         return sim_propoprtional(e) + sim_integral(e) + sim_derviative(e);
     }
-    constexpr std::vector<uint8_t> dump() const
+    constexpr std::vector<uint8_t> dump() const override
     {
         auto bytes = to_bytes(std::array{ m_k, m_ti, m_td, m_integral, m_prev_e });
-        return std::vector(bytes.begin(), bytes.end());
+        constexpr auto dump_size_b = to_bytes(static_cast<uint32_t>(prefix_size + bytes.size()));
+        return concat_iterables(dump_size_b, range_to_bytes(unique_name), bytes);
     }
     constexpr void reset() noexcept override
     {
@@ -100,6 +113,7 @@ public:
     friend std::ostream &operator<<(std::ostream &os, const RegulatorPID &m);
     friend std::istream &operator>>(std::istream &is, RegulatorPID &m);
 };
+DESERIALIZABLE_SISO(RegulatorPID);
 
 #ifndef NO_LAB_TESTS
 class Testy_RegulatorPID {

@@ -6,6 +6,8 @@ Format depends on platform's endianness. Will not work if moved between little-e
 
 | size (bytes) | what | type |
 | ------------ | ---- | ---- |
+| 4 | length of data | `uint32_t` |
+| 4 | prefix `"mARX"` | `unsigned char[4]` |
 | 8 | n_coeff_a | `uint64_t` |
 | 8 | n_coeff_b | `uint64_t` |
 | 8 | dist_mean | `double` |

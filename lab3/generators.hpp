@@ -28,23 +28,6 @@ extern std::vector<std::pair<std::vector<std::uint8_t>,
                 });                                                                                \
     }
 
-namespace {
-template <std::ranges::input_range T>
-    requires ByteRepr<std::ranges::range_value_t<T>>
-constexpr bool prefix_match(const std::string_view prefix, const T &bin_data)
-{
-    if (std::ranges::size(bin_data) < prefix.size())
-        return false;
-    const auto prefix_bin = std::views::transform(
-        prefix, [](const char c) constexpr { return static_cast<std::uint8_t>(c); });
-#if __cpp_lib_ranges_starts_ends_with >= 202106L
-    return std::ranges::starts_with(bin_data, prefix_bin);
-#else
-    return std::ranges::mismatch(bin_data, prefix_bin).in2 == std::ranges::end(prefix_bin);
-#endif
-}
-} // namespace (unnamed)
-
 class Generator {
 protected:
     double m_amplitude;
@@ -132,7 +115,7 @@ public:
 #else
             if (std::ranges::mismatch(serialized, name).in2 == std::ranges::end(name))
 #endif
-                return factory(serialized);
+                return factory(serialized | std::ranges::to<std::vector<uint8_t>>());
         }
         throw std::runtime_error{ "Serialized data does not match any known generator." };
     }
@@ -167,8 +150,7 @@ public:
     GeneratorDecor(const T &serialized)
         : Generator{ serialized }
     {
-        auto remaining = std::ranges::drop_view{ serialized, Generator::dump_size }
-            | std::ranges::to<std::vector<std::uint8_t>>();
+        auto remaining = std::ranges::drop_view{ serialized, Generator::dump_size };
         m_base = deserialize(remaining);
     }
     double symuluj(int time) override { return m_base->symuluj(time) + simulate_internal(time); }

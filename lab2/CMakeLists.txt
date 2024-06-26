@@ -37,6 +37,7 @@ qt_add_executable(POlab2
     gui/GeneratorsConfig.cpp
     RegulatorPID.cpp
     feedback_loop.cpp
+    ../lab1/ObiektSISO.cpp
     ../lab1/ModelARX.cpp
     ../lab3/generators.cpp
     ../lab4/PętlaUAR.cpp
