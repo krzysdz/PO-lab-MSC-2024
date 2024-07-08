@@ -1,8 +1,9 @@
 #pragma once
-#include "../../lab1/ModelARX.h"
-#include "../../lab3/generators.hpp"
-#include "../RegulatorPID.h"
 #include "GeneratorsConfig.hpp"
+#include "../ModelARX.h"
+#include "../PętlaUAR.hpp"
+#include "../RegulatorPID.h"
+#include "../generators.hpp"
 #include <QAction>
 #include <QChart>
 #include <QChartView>
@@ -20,7 +21,6 @@
 #include <QVBoxLayout>
 #include <optional>
 #include <vector>
-#include "../../lab4/PętlaUAR.hpp"
 
 class MainWindow : public QMainWindow {
 private:

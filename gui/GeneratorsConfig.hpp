@@ -1,5 +1,5 @@
 #pragma once
-#include "../../lab3/generators.hpp"
+#include "../generators.hpp"
 #include <QComboBox>
 #include <QDialog>
 #include <QErrorMessage>

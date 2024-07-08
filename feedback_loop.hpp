@@ -1,5 +1,5 @@
 #pragma once
-#include "../lab1/ModelARX.h"
+#include "ModelARX.h"
 #include "RegulatorPID.h"
 #include <optional>
 

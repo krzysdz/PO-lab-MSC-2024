@@ -1,5 +1,5 @@
 #pragma once
-#include "../lab1/ObiektSISO.h"
+#include "ObiektSISO.h"
 #include <memory>
 #include <vector>
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../lab1/util.hpp"
+#include "util.hpp"
 #include <cmath>
 #include <functional>
 #include <memory>

@@ -1,6 +1,6 @@
 #pragma once
-#include "../lab1/ObiektSISO.h"
-#include "../lab1/util.hpp"
+#include "ObiektSISO.h"
+#include "util.hpp"
 #include <iostream>
 #include <iterator>
 #include <type_traits>

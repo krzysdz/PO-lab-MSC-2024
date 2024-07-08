@@ -1,6 +1,6 @@
 #include "MainWindow.hpp"
+#include "../ObiektStatyczny.hpp"
 #include "../feedback_loop.hpp"
-#include "../../lab4/ObiektStatyczny.hpp"
 #include <QApplication>
 #include <QDir>
 #include <QFileDialog>
@@ -81,27 +81,32 @@ void MainWindow::prepare_layout()
     param_sep1->setFrameShadow(QFrame::Shadow::Sunken);
     layout_parameters->setWidget(4, QFormLayout::ItemRole::SpanningRole, param_sep1);
 
-    const auto obiekt_statyczny_label = new QLabel{"<b>ObiektStatyczny parameters</b>", widget_parameters};
+    const auto obiekt_statyczny_label
+        = new QLabel{ "<b>ObiektStatyczny parameters</b>", widget_parameters };
     layout_parameters->setWidget(5, QFormLayout::ItemRole::SpanningRole, obiekt_statyczny_label);
 
-    input_static_x1 = new QDoubleSpinBox{widget_parameters};
+    input_static_x1 = new QDoubleSpinBox{ widget_parameters };
     input_static_x1->setSingleStep(0.1);
-    input_static_x1->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_x1->setRange(std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::max());
     input_static_x1->setValue(-1.0);
     layout_parameters->addRow("x1", input_static_x1);
-    input_static_y1 = new QDoubleSpinBox{widget_parameters};
+    input_static_y1 = new QDoubleSpinBox{ widget_parameters };
     input_static_y1->setSingleStep(0.1);
-    input_static_y1->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_y1->setRange(std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::max());
     input_static_y1->setValue(-1.0);
     layout_parameters->addRow("y1", input_static_y1);
-    input_static_x2 = new QDoubleSpinBox{widget_parameters};
+    input_static_x2 = new QDoubleSpinBox{ widget_parameters };
     input_static_x2->setSingleStep(0.1);
-    input_static_x2->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_x2->setRange(std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::max());
     input_static_x2->setValue(1.0);
     layout_parameters->addRow("x2", input_static_x2);
-    input_static_y2 = new QDoubleSpinBox{widget_parameters};
+    input_static_y2 = new QDoubleSpinBox{ widget_parameters };
     input_static_y2->setSingleStep(0.1);
-    input_static_y2->setRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+    input_static_y2->setRange(std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::max());
     input_static_y2->setValue(1.0);
     layout_parameters->addRow("y2", input_static_y2);
 
@@ -219,7 +224,10 @@ void MainWindow::configure_loop()
     const auto x2 = input_static_x2->value();
     const auto y2 = input_static_y2->value();
     loop.clear();
-    loop.insert(0, std::make_unique<ModelARX>(std::move(coeff_a), std::move(coeff_b), delay, stddev), std::make_unique<ObiektStatyczny>(p{x1, y1}, p{x2, y2}), std::make_unique<RegulatorPID>(k, Ti, Td));
+    loop.insert(0,
+                std::make_unique<ModelARX>(std::move(coeff_a), std::move(coeff_b), delay, stddev),
+                std::make_unique<ObiektStatyczny>(p{ x1, y1 }, p{ x2, y2 }),
+                std::make_unique<RegulatorPID>(k, Ti, Td));
     reset_sim(true);
 }
 
@@ -309,8 +317,8 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 // {
 //     if (!model_opt.has_value()) {
 //         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-//                                  "Model is not defined. Make sure to click <b>Apply parameters</b> "
-//                                  "button before exporting.",
+//                                  "Model is not defined. Make sure to click <b>Apply
+//                                  parameters</b> " "button before exporting.",
 //                                  QMessageBox::StandardButton::Close };
 //         message_box.exec();
 //         return;
@@ -332,8 +340,8 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 //     } else {
 //         const auto dump = model_opt->dump();
 //         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-//         out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-//         out.flush();
+//         out.write(reinterpret_cast<const char *>(dump.data()),
+//         static_cast<int64_t>(dump.size())); out.flush();
 //     }
 // }
 
@@ -364,8 +372,8 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 //     } else {
 //         const auto dump = regulator_opt->dump();
 //         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-//         out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-//         out.flush();
+//         out.write(reinterpret_cast<const char *>(dump.data()),
+//         static_cast<int64_t>(dump.size())); out.flush();
 //     }
 // }
 
@@ -387,7 +395,8 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 //         in.seekg(0, std::ios::end);
 //         const auto file_size = in.tellg();
 //         in.seekg(0, std::ios::beg);
-//         const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+//         const auto buff =
+//         std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
 //         in.read(reinterpret_cast<char *>(buff.get()), file_size);
 //         in.close();
 //         model_opt.emplace(buff.get(), buff.get() + file_size);
@@ -412,7 +421,8 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 //         in.seekg(0, std::ios::end);
 //         const auto file_size = in.tellg();
 //         in.seekg(0, std::ios::beg);
-//         const auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
+//         const auto buff =
+//         std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
 //         in.read(reinterpret_cast<char *>(buff.get()), file_size);
 //         in.close();
 //         regulator_opt.emplace(buff.get(), buff.get() + file_size);

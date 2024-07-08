@@ -1,5 +1,5 @@
 #pragma once
-#include "../lab2/define_fixes.hpp"
+#include "define_fixes.hpp"
 #include "util.hpp"
 #include <cstdint>
 #include <memory>
