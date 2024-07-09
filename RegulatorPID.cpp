@@ -33,7 +33,9 @@ std::istream &operator>>(std::istream &is, RegulatorPID &m)
     return is;
 }
 
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
+#include <sstream>
+
 void Testy_RegulatorPID::test_RegulatorP_brakPobudzenia()
 {
     // Sygnatura testu:

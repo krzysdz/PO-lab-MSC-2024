@@ -4,7 +4,7 @@ std::vector<std::pair<std::vector<std::uint8_t>,
                       std::unique_ptr<ObiektSISO> (*)(const std::vector<std::uint8_t> &)>>
     siso_serializers{};
 
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
 #include <cmath>
 #include <iomanip>
 #include <iostream>

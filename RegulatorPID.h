@@ -115,7 +115,7 @@ public:
 };
 DESERIALIZABLE_SISO(RegulatorPID);
 
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
 class Testy_RegulatorPID {
 private:
     static void test_RegulatorP_brakPobudzenia();

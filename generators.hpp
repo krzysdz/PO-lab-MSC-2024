@@ -470,3 +470,19 @@ public:
     }
 };
 DESERIALIZABLE_GEN(GeneratorNormalNoise);
+
+#ifdef LAB_TESTS
+class GeneratorTests {
+    static auto get_base();
+    static void test_base();
+    static void test_activity_time();
+    static void test_sin();
+    static void test_rect();
+    static void test_sawtooth();
+    static void test_addition();
+    static void test_serialization();
+
+public:
+    static void run_tests();
+};
+#endif

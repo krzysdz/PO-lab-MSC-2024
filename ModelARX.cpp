@@ -134,7 +134,9 @@ void ModelARX::reset()
     m_n_generated = 0;
 }
 
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
+#include <sstream>
+
 void Testy_ModelARX::test_ModelARX_brakPobudzenia()
 {
     // Sygnatura testu:

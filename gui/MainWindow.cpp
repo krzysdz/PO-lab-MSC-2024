@@ -1,6 +1,5 @@
 #include "MainWindow.hpp"
 #include "../ObiektStatyczny.hpp"
-#include "../feedback_loop.hpp"
 #include <QApplication>
 #include <QDir>
 #include <QFileDialog>

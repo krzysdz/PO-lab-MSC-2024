@@ -135,13 +135,13 @@ public:
     friend bool operator!=(const ModelARX &, const ModelARX &) = default;
     friend std::ostream &operator<<(std::ostream &os, const ModelARX &m);
     friend std::istream &operator>>(std::istream &is, ModelARX &m);
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
     friend class Testy_ModelARX;
 #endif
 };
 DESERIALIZABLE_SISO(ModelARX);
 
-#ifndef NO_LAB_TESTS
+#ifdef LAB_TESTS
 class Testy_ModelARX {
 private:
     static void test_ModelARX_brakPobudzenia();

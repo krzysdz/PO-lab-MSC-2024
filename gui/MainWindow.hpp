@@ -1,9 +1,9 @@
 #pragma once
-#include "GeneratorsConfig.hpp"
 #include "../ModelARX.h"
 #include "../PętlaUAR.hpp"
 #include "../RegulatorPID.h"
 #include "../generators.hpp"
+#include "GeneratorsConfig.hpp"
 #include <QAction>
 #include <QChart>
 #include <QChartView>
