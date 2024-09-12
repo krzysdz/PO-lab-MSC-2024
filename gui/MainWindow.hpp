@@ -48,6 +48,8 @@ private:
     QAction *action_insert_ARX;
     QAction *action_insert_PID;
     QAction *action_insert_static;
+    QAction *action_reset_sim;
+    QAction *action_reset_sim_gen;
     QWidget *widget_right;
     QWidget *widget_components;
     QWidget *widget_inputs;
@@ -115,6 +117,7 @@ private:
     }
 
     void change_active_editor(const QModelIndex &index);
+    void refresh_editor();
     void update_tree_actions(const QModelIndex &index);
     void on_tree_selection_change();
     template <std::derived_from<ObiektSISO> T>

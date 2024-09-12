@@ -87,6 +87,13 @@ void MainWindow::prepare_menu_bar()
     action_insert_loop = submenu_insert_component->addAction("PętlaUAR");
     connect(action_insert_loop, &QAction::triggered, this,
             [this]() { this->insert_component<UARParams>("New PętlaUAR"); });
+
+    // Others
+    action_reset_sim = menu_edit->addAction("Reset simulation");
+    connect(action_reset_sim, &QAction::triggered, this, &MainWindow::reset_sim);
+
+    action_reset_sim_gen = menu_edit->addAction("Reset simulation (incl. generators)");
+    connect(action_reset_sim_gen, &QAction::triggered, this, [this]() { this->reset_sim(true); });
 }
 
 void MainWindow::prepare_layout()
@@ -260,6 +267,7 @@ void MainWindow::reset_sim(bool incl_generators)
     real_outputs.clear();
     given_inputs.clear();
     loop.reset();
+    refresh_editor();
 }
 
 void MainWindow::simulate_manual()
@@ -418,6 +426,11 @@ void MainWindow::change_active_editor(const QModelIndex &index)
     } else {
         layout_param_editors->setCurrentIndex(0);
     }
+}
+
+void MainWindow::refresh_editor()
+{
+    change_active_editor(tree_view->selectionModel()->currentIndex());
 }
 
 void MainWindow::update_tree_actions(const QModelIndex &index)
