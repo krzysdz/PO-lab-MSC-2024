@@ -120,6 +120,10 @@ public:
     }
     ModelARX(std::vector<double> &&coeff_a, std::vector<double> &&coeff_b, const int32_t delay = 1,
              const double stddev = 0.0);
+    constexpr const std::vector<double> &get_coeff_a() const noexcept { return m_coeff_a; }
+    constexpr const std::vector<double> &get_coeff_b() const noexcept { return m_coeff_b; }
+    constexpr uint32_t get_transport_delay() const noexcept { return m_transport_delay; }
+    double get_stddev() const { return m_distribution.stddev(); }
     void set_coeff_a(std::vector<double> &&coefficients) noexcept;
     void set_coeff_b(std::vector<double> &&coefficients) noexcept;
     void set_transport_delay(const int32_t delay);

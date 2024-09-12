@@ -77,6 +77,9 @@ public:
     {
         check_constraints();
     }
+    constexpr double get_k() const noexcept { return m_k; }
+    constexpr double get_ti() const noexcept { return m_ti; }
+    constexpr double get_td() const noexcept { return m_td; }
     constexpr void set_k(const double k)
     {
         throw_bad_neg(k);

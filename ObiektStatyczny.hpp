@@ -63,6 +63,11 @@ public:
             m_min_val = y1;
         }
     }
+    constexpr std::pair<point, point> get_points() const noexcept
+    {
+        return { point{ (m_min_val - m_b) / m_a, m_min_val },
+                 point{ (m_max_val - m_b) / m_a, m_max_val } };
+    }
     constexpr double symuluj(double u) override
     {
         return std::min(m_max_val, std::max(m_min_val, m_a * u + m_b));

@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Enable LTO
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 # Enable more warnings
 if (MSVC)
     add_compile_options(/W4)
@@ -28,6 +31,8 @@ qt_add_executable(POlabs
     main.cpp
     gui/MainWindow.cpp
     gui/GeneratorsConfig.cpp
+    gui/TreeModel.cpp
+    gui/param_editors.cpp
     RegulatorPID.cpp
     ObiektSISO.cpp
     ModelARX.cpp

@@ -68,6 +68,8 @@ public:
     double symuluj(double u) override;
     constexpr void clear() noexcept { m_loop.clear(); }
     constexpr std::size_t size() const noexcept { return m_loop.size(); }
+    constexpr double get_last_result() const noexcept { return m_prev_result; }
+    constexpr bool get_closed() const noexcept { return m_closed; }
     constexpr void set_init(double init_val) noexcept { m_prev_result = init_val; }
     constexpr void set_closed(bool closed) noexcept { m_closed = closed; }
     constexpr void push_back(std::unique_ptr<ObiektSISO> &&element)
@@ -118,5 +120,7 @@ public:
                                                           + n_elements.size() + elements.size()));
         return concat_iterables(len_b, prefix, closed, last, n_elements, elements);
     }
+
+    friend class TreeModel;
 };
 DESERIALIZABLE_SISO(PętlaUAR);

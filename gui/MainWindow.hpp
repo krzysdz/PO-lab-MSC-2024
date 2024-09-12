@@ -4,11 +4,12 @@
 #include "../RegulatorPID.h"
 #include "../generators.hpp"
 #include "GeneratorsConfig.hpp"
+#include "TreeModel.hpp"
+#include "param_editors.hpp"
 #include <QAction>
 #include <QChart>
 #include <QChartView>
 #include <QDoubleSpinBox>
-#include <QFormLayout>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QMainWindow>
@@ -17,12 +18,16 @@
 #include <QSessionManager>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStackedLayout>
 #include <QTabWidget>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <optional>
 #include <vector>
 
 class MainWindow : public QMainWindow {
+    Q_OBJECT
+
 private:
     QMenu *menu_file;
     QMenu *submenu_export;
@@ -32,27 +37,35 @@ private:
     QAction *action_export_pid;
     QAction *action_import_model;
     QAction *action_import_pid;
+    QMenu *menu_edit;
+    QMenu *submenu_append_child;
+    QMenu *submenu_insert_component;
+    QAction *action_append_loop;
+    QAction *action_append_ARX;
+    QAction *action_append_PID;
+    QAction *action_append_static;
+    QAction *action_insert_loop;
+    QAction *action_insert_ARX;
+    QAction *action_insert_PID;
+    QAction *action_insert_static;
     QWidget *widget_right;
-    QWidget *widget_parameters;
+    QWidget *widget_components;
     QWidget *widget_inputs;
     QTabWidget *tabs_input;
     QSplitter *main_columns_splitter;
-    QFormLayout *layout_parameters;
+    QVBoxLayout *layout_components;
     QVBoxLayout *layout_right_col;
     QChart *plot;
     QChartView *chart_view;
-    QDoubleSpinBox *input_pid_k;
-    QDoubleSpinBox *input_pid_ti;
-    QDoubleSpinBox *input_pid_td;
-    QDoubleSpinBox *input_static_x1;
-    QDoubleSpinBox *input_static_y1;
-    QDoubleSpinBox *input_static_x2;
-    QDoubleSpinBox *input_static_y2;
-    QSpinBox *input_arx_delay;
-    QDoubleSpinBox *input_arx_stddev;
-    QLineEdit *input_arx_coeff_a;
-    QLineEdit *input_arx_coeff_b;
-    QPushButton *button_apply_params;
+    TreeModel *tree_model;
+    QTreeView *tree_view;
+    QStackedLayout *layout_param_editors;
+    QWidget *editor_nothing;
+    PIDParams *editor_pid;
+    ObiektStatycznyParams *editor_static;
+    ARXParams *editor_arx;
+    UARParams *editor_uar;
+    QPushButton *button_save_params;
     QGridLayout *layout_inputs;
     QLineEdit *input_inputs;
     QSpinBox *input_repetitions;
@@ -68,7 +81,6 @@ private:
     void prepare_menu_bar();
     void prepare_layout();
     std::vector<double> parse_coefficients(const QString &coeff_text);
-    void configure_loop();
     void simulate(const std::vector<double> &out_inputs);
     void plot_results();
     void reset_sim(bool incl_generators = false);
@@ -80,6 +92,40 @@ private:
     // void export_pid();
     // void import_model();
     // void import_pid();
+
+    template <typename E>
+        requires ParamEditor<E, typename E::ObjectT>
+    void insert_component(const QString &title, bool append = false)
+    {
+        const auto index = tree_view->selectionModel()->currentIndex();
+        const auto insertion_parent = append ? index : tree_model->parent(index);
+        if (!insertion_parent.isValid())
+            return;
+        const auto as_loop = dynamic_cast<PętlaUAR *>(
+            static_cast<ObiektSISO *>(insertion_parent.internalPointer()));
+        if (as_loop == nullptr)
+            return;
+        auto component = EditorDialog<E>::get_component(this, title);
+        if (component == nullptr)
+            return;
+        if (append)
+            tree_model->appendChild(insertion_parent, std::move(component));
+        else
+            tree_model->insertChild(insertion_parent, index.row(), std::move(component));
+    }
+
+    void change_active_editor(const QModelIndex &index);
+    void update_tree_actions(const QModelIndex &index);
+    void on_tree_selection_change();
+    template <std::derived_from<ObiektSISO> T>
+    void update_from_editor(const ParamEditor<T> auto *editor, ObiektSISO *ptr)
+    {
+        const auto obj_ptr = dynamic_cast<T *>(ptr);
+        Q_ASSERT(obj_ptr != nullptr);
+        Q_ASSERT(layout_param_editors->currentWidget() == editor);
+        editor->update_obj(*obj_ptr);
+    }
+    void save_params();
 
 public:
     explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags())

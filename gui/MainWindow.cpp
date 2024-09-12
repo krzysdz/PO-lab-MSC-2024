@@ -17,6 +17,7 @@ void MainWindow::setup_ui()
 {
     prepare_menu_bar();
     prepare_layout();
+    on_tree_selection_change();
 }
 
 void MainWindow::prepare_menu_bar()
@@ -45,6 +46,47 @@ void MainWindow::prepare_menu_bar()
     action_exit = menu_file->addAction("Exit");
     action_exit->setShortcut(QKeySequence::Quit);
     connect(action_exit, &QAction::triggered, &QApplication::quit);
+
+    menu_edit = menuBar()->addMenu("&Edit");
+
+    // Appending
+    submenu_append_child = menu_edit->addMenu("Append child component");
+
+    action_append_PID = submenu_append_child->addAction("RegulatorPID");
+    connect(action_append_PID, &QAction::triggered, this,
+            [this]() { this->insert_component<PIDParams>("New RegulatorPID", true); });
+
+    action_append_static = submenu_append_child->addAction("ObiektStatyczny");
+    connect(action_append_static, &QAction::triggered, this, [this]() {
+        this->insert_component<ObiektStatycznyParams>("New ObiektStatyczny", true);
+    });
+
+    action_append_ARX = submenu_append_child->addAction("ModelARX");
+    connect(action_append_ARX, &QAction::triggered, this,
+            [this]() { this->insert_component<ARXParams>("New ModelARX", true); });
+
+    action_append_loop = submenu_append_child->addAction("PętlaUAR");
+    connect(action_append_loop, &QAction::triggered, this,
+            [this]() { this->insert_component<UARParams>("New PętlaUAR", true); });
+
+    // Inserting
+    submenu_insert_component = menu_edit->addMenu("Insert component before selected");
+
+    action_insert_PID = submenu_insert_component->addAction("RegulatorPID");
+    connect(action_insert_PID, &QAction::triggered, this,
+            [this]() { this->insert_component<PIDParams>("New RegulatorPID"); });
+
+    action_insert_static = submenu_insert_component->addAction("ObiektStatyczny");
+    connect(action_insert_static, &QAction::triggered, this,
+            [this]() { this->insert_component<ObiektStatycznyParams>("New ObiektStatyczny"); });
+
+    action_insert_ARX = submenu_insert_component->addAction("ModelARX");
+    connect(action_insert_ARX, &QAction::triggered, this,
+            [this]() { this->insert_component<ARXParams>("New ModelARX"); });
+
+    action_insert_loop = submenu_insert_component->addAction("PętlaUAR");
+    connect(action_insert_loop, &QAction::triggered, this,
+            [this]() { this->insert_component<UARParams>("New PętlaUAR"); });
 }
 
 void MainWindow::prepare_layout()
@@ -54,96 +96,46 @@ void MainWindow::prepare_layout()
     setCentralWidget(main_columns_splitter);
 
     // Parameters section - left part of the window
-    widget_parameters = new QWidget{ main_columns_splitter };
-    main_columns_splitter->addWidget(widget_parameters);
+    widget_components = new QWidget{ main_columns_splitter };
+    main_columns_splitter->addWidget(widget_components);
 
-    layout_parameters = new QFormLayout{ widget_parameters };
-
-    const auto pid_label = new QLabel{ "<b>PID parameters</b>", widget_parameters };
-    layout_parameters->setWidget(0, QFormLayout::ItemRole::SpanningRole, pid_label);
-
-    input_pid_k = new QDoubleSpinBox{ widget_parameters };
-    input_pid_k->setMinimum(0.0);
-    input_pid_k->setSingleStep(0.1);
-    layout_parameters->addRow("k", input_pid_k);
-
-    input_pid_ti = new QDoubleSpinBox{ widget_parameters };
-    input_pid_ti->setMinimum(0.0);
-    layout_parameters->addRow("Ti", input_pid_ti);
-
-    input_pid_td = new QDoubleSpinBox{ widget_parameters };
-    input_pid_td->setMinimum(0.0);
-    layout_parameters->addRow("Td", input_pid_td);
-
-    const auto param_sep1 = new QFrame{ widget_parameters };
-    param_sep1->setFrameShape(QFrame::Shape::HLine);
-    param_sep1->setFrameShadow(QFrame::Shadow::Sunken);
-    layout_parameters->setWidget(4, QFormLayout::ItemRole::SpanningRole, param_sep1);
-
-    const auto obiekt_statyczny_label
-        = new QLabel{ "<b>ObiektStatyczny parameters</b>", widget_parameters };
-    layout_parameters->setWidget(5, QFormLayout::ItemRole::SpanningRole, obiekt_statyczny_label);
-
-    input_static_x1 = new QDoubleSpinBox{ widget_parameters };
-    input_static_x1->setSingleStep(0.1);
-    input_static_x1->setRange(std::numeric_limits<double>::lowest(),
-                              std::numeric_limits<double>::max());
-    input_static_x1->setValue(-1.0);
-    layout_parameters->addRow("x1", input_static_x1);
-    input_static_y1 = new QDoubleSpinBox{ widget_parameters };
-    input_static_y1->setSingleStep(0.1);
-    input_static_y1->setRange(std::numeric_limits<double>::lowest(),
-                              std::numeric_limits<double>::max());
-    input_static_y1->setValue(-1.0);
-    layout_parameters->addRow("y1", input_static_y1);
-    input_static_x2 = new QDoubleSpinBox{ widget_parameters };
-    input_static_x2->setSingleStep(0.1);
-    input_static_x2->setRange(std::numeric_limits<double>::lowest(),
-                              std::numeric_limits<double>::max());
-    input_static_x2->setValue(1.0);
-    layout_parameters->addRow("x2", input_static_x2);
-    input_static_y2 = new QDoubleSpinBox{ widget_parameters };
-    input_static_y2->setSingleStep(0.1);
-    input_static_y2->setRange(std::numeric_limits<double>::lowest(),
-                              std::numeric_limits<double>::max());
-    input_static_y2->setValue(1.0);
-    layout_parameters->addRow("y2", input_static_y2);
-
-    const auto param_sep2 = new QFrame{ widget_parameters };
-    param_sep2->setFrameShape(QFrame::Shape::HLine);
-    param_sep2->setFrameShadow(QFrame::Shadow::Sunken);
-    layout_parameters->setWidget(10, QFormLayout::ItemRole::SpanningRole, param_sep2);
-
-    const auto arx_label = new QLabel{ "<b>ARX parameters</b>", widget_parameters };
-    layout_parameters->setWidget(11, QFormLayout::ItemRole::SpanningRole, arx_label);
-
-    input_arx_delay = new QSpinBox{ widget_parameters };
-    input_arx_delay->setMinimum(1);
-    layout_parameters->addRow("Delay", input_arx_delay);
-
-    input_arx_stddev = new QDoubleSpinBox{ widget_parameters };
-    input_arx_stddev->setMinimum(0.0);
-    input_arx_stddev->setSingleStep(0.1);
-    layout_parameters->addRow("stddev", input_arx_stddev);
+    layout_components = new QVBoxLayout{ widget_components };
 
     QRegularExpression coeff_pattern{ R"(^\s*(?:-?\d+(?:\.\d+)?(?:\s*?,\s*?|\s*?$))*$)" };
     const auto coeff_validator
-        = new QRegularExpressionValidator{ coeff_pattern, widget_parameters };
+        = new QRegularExpressionValidator{ coeff_pattern, widget_components };
 
-    input_arx_coeff_a = new QLineEdit{ widget_parameters };
-    input_arx_coeff_a->setToolTip("Comma separated list of coefficients");
-    input_arx_coeff_a->setValidator(coeff_validator);
-    layout_parameters->addRow("<b>A</b> coefficients", input_arx_coeff_a);
+    // Component tree
+    tree_model = new TreeModel(&loop, widget_components);
+    tree_view = new QTreeView(widget_components);
+    tree_view->setModel(tree_model);
+    tree_view->expandAll();
+    layout_components->addWidget(tree_view);
+    connect(tree_view->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            &MainWindow::on_tree_selection_change);
 
-    input_arx_coeff_b = new QLineEdit{ widget_parameters };
-    input_arx_coeff_b->setToolTip("Comma separated list of coefficients");
-    input_arx_coeff_b->setValidator(coeff_validator);
-    layout_parameters->addRow("<b>B</b> coefficients", input_arx_coeff_b);
+    // Component parameter editors
+    layout_param_editors = new QStackedLayout{};
+    layout_components->addItem(layout_param_editors);
 
-    button_apply_params = new QPushButton{ "Apply parameters", widget_parameters };
-    button_apply_params->setToolTip("Create a new feedback loop model with provided parameters");
-    layout_parameters->setWidget(16, QFormLayout::ItemRole::SpanningRole, button_apply_params);
-    connect(button_apply_params, &QPushButton::released, this, &MainWindow::configure_loop);
+    editor_nothing = new QWidget{ widget_components };
+    layout_param_editors->addWidget(editor_nothing);
+
+    editor_pid = new PIDParams{ widget_components };
+    layout_param_editors->addWidget(editor_pid);
+
+    editor_static = new ObiektStatycznyParams{ widget_components };
+    layout_param_editors->addWidget(editor_static);
+
+    editor_arx = new ARXParams{ widget_components };
+    layout_param_editors->addWidget(editor_arx);
+
+    editor_uar = new UARParams{ widget_components };
+    layout_param_editors->addWidget(editor_uar);
+
+    button_save_params = new QPushButton{ "Save changes", widget_components };
+    layout_components->addWidget(button_save_params);
+    connect(button_save_params, &QPushButton::released, this, &MainWindow::save_params);
 
     // Right part of the window
     widget_right = new QWidget{ main_columns_splitter };
@@ -208,34 +200,10 @@ std::vector<double> MainWindow::parse_coefficients(const QString &coeff_text)
     return coefficients;
 }
 
-void MainWindow::configure_loop()
-{
-    using p = ObiektStatyczny::point;
-    auto coeff_a = parse_coefficients(input_arx_coeff_a->text());
-    auto coeff_b = parse_coefficients(input_arx_coeff_b->text());
-    const auto delay = input_arx_delay->value();
-    const auto stddev = input_arx_stddev->value();
-    const auto k = input_pid_k->value();
-    const auto Ti = input_pid_ti->value();
-    const auto Td = input_pid_td->value();
-    const auto x1 = input_static_x1->value();
-    const auto y1 = input_static_y1->value();
-    const auto x2 = input_static_x2->value();
-    const auto y2 = input_static_y2->value();
-    loop.clear();
-    loop.insert(0,
-                std::make_unique<ModelARX>(std::move(coeff_a), std::move(coeff_b), delay, stddev),
-                std::make_unique<ObiektStatyczny>(p{ x1, y1 }, p{ x2, y2 }),
-                std::make_unique<RegulatorPID>(k, Ti, Td));
-    reset_sim(true);
-}
-
 void MainWindow::simulate(const std::vector<double> &out_inputs)
 {
     if (loop.size() == 0) {
-        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-                                 "Enter correct model and regulator parameters and click the "
-                                 "<b>Apply parameters</b> button before simulating",
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem", "Loop has no components",
                                  QMessageBox::StandardButton::Close };
         message_box.exec();
         return;
@@ -427,6 +395,69 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
 //         regulator_opt.emplace(buff.get(), buff.get() + file_size);
 //     }
 // }
+
+void MainWindow::change_active_editor(const QModelIndex &index)
+{
+    if (!index.isValid()) {
+        layout_param_editors->setCurrentIndex(0);
+        return;
+    }
+    auto ptr = static_cast<ObiektSISO *>(index.internalPointer());
+    if (auto p = dynamic_cast<RegulatorPID *>(ptr)) {
+        editor_pid->update_from(*p);
+        layout_param_editors->setCurrentIndex(1);
+    } else if (auto p = dynamic_cast<ObiektStatyczny *>(ptr)) {
+        editor_static->update_from(*p);
+        layout_param_editors->setCurrentIndex(2);
+    } else if (auto p = dynamic_cast<ModelARX *>(ptr)) {
+        editor_arx->update_from(*p);
+        layout_param_editors->setCurrentIndex(3);
+    } else if (auto p = dynamic_cast<PętlaUAR *>(ptr)) {
+        editor_uar->update_from(*p);
+        layout_param_editors->setCurrentIndex(4);
+    } else {
+        layout_param_editors->setCurrentIndex(0);
+    }
+}
+
+void MainWindow::update_tree_actions(const QModelIndex &index)
+{
+    if (!index.isValid()) {
+        submenu_append_child->setEnabled(false);
+        submenu_insert_component->setEnabled(false);
+        return;
+    }
+    submenu_append_child->setEnabled(
+        dynamic_cast<PętlaUAR *>(static_cast<ObiektSISO *>(index.internalPointer())) != nullptr);
+    const auto parent = tree_model->parent(index);
+    submenu_insert_component->setEnabled(parent.isValid());
+}
+
+void MainWindow::on_tree_selection_change()
+{
+    const auto idx = tree_view->selectionModel()->currentIndex();
+    update_tree_actions(idx);
+    change_active_editor(idx);
+    button_save_params->setEnabled(idx.isValid());
+}
+
+void MainWindow::save_params()
+{
+    const auto sel_idx = tree_view->selectionModel()->currentIndex();
+    if (!sel_idx.isValid())
+        return;
+    const auto ptr = static_cast<ObiektSISO *>(sel_idx.internalPointer());
+    const auto editor_idx = layout_param_editors->currentIndex();
+    if (editor_idx == 1) {
+        update_from_editor<RegulatorPID>(editor_pid, ptr);
+    } else if (editor_idx == 2) {
+        update_from_editor<ObiektStatyczny>(editor_static, ptr);
+    } else if (editor_idx == 3) {
+        update_from_editor<ModelARX>(editor_arx, ptr);
+    } else if (editor_idx == 4) {
+        update_from_editor<PętlaUAR>(editor_uar, ptr);
+    }
+}
 
 void MainWindow::start()
 {
