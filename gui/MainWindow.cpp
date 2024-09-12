@@ -24,14 +24,14 @@ void MainWindow::prepare_menu_bar()
 {
     menu_file = menuBar()->addMenu("&File");
 
-    // // Export
-    // submenu_export = menu_file->addMenu("Export");
+    // Export
+    submenu_export = menu_file->addMenu("Export");
 
-    // action_export_model = submenu_export->addAction("ARX model");
-    // connect(action_export_model, &QAction::triggered, this, &MainWindow::export_model);
+    action_export_model = submenu_export->addAction("Loop model");
+    connect(action_export_model, &QAction::triggered, this, &MainWindow::export_model);
 
-    // action_export_pid = submenu_export->addAction("PID regulator");
-    // connect(action_export_pid, &QAction::triggered, this, &MainWindow::export_pid);
+    action_export_generators = submenu_export->addAction("Generators");
+    connect(action_export_generators, &QAction::triggered, this, &MainWindow::export_generators);
 
     // // Import
     // submenu_import = menu_file->addMenu("Import");
@@ -288,69 +288,50 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
     simulate(inputs);
 }
 
-// void MainWindow::export_model()
-// {
-//     if (!model_opt.has_value()) {
-//         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-//                                  "Model is not defined. Make sure to click <b>Apply
-//                                  parameters</b> " "button before exporting.",
-//                                  QMessageBox::StandardButton::Close };
-//         message_box.exec();
-//         return;
-//     }
+void MainWindow::export_model()
+{
+    QString filter{ "Loop model (*.lmod)" };
+    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+                                                       QDir::currentPath(), filter, &filter)
+                              .toStdU16String();
+    if (filename.empty())
+        return;
+    fs::path path{ filename };
+    const auto ext = path.extension();
+    if (ext != ".lmod")
+        path.replace_extension(".lmod");
 
-//     QString filter{ "ARX binary model (*.arx);;ARX text model (*.arxt)" };
-//     const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
-//                                                        QDir::currentPath(), filter, &filter)
-//                               .toStdU16String();
-//     if (filename.empty())
-//         return;
-//     fs::path path{ filename };
-//     const auto ext = path.extension();
-//     if (ext != ".arx" && ext != ".arxt")
-//         path.replace_extension(".arx");
-//     if (filename.back() == u't') {
-//         std::ofstream out{ path, std::ios::out | std::ios::trunc };
-//         out << model_opt.value();
-//     } else {
-//         const auto dump = model_opt->dump();
-//         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-//         out.write(reinterpret_cast<const char *>(dump.data()),
-//         static_cast<int64_t>(dump.size())); out.flush();
-//     }
-// }
+    const auto dump = loop.dump();
+    std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+    out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+    out.flush();
+}
 
-// void MainWindow::export_pid()
-// {
-//     if (!regulator_opt.has_value()) {
-//         QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
-//                                  "Regulator is not defined. Make sure to click <b>Apply "
-//                                  "parameters</b> button before exporting.",
-//                                  QMessageBox::StandardButton::Close };
-//         message_box.exec();
-//         return;
-//     }
+void MainWindow::export_generators()
+{
+    if (panel_generators->empty()) {
+        QMessageBox message_box{ QMessageBox::Icon::Warning, "Problem",
+                                 "There are no generators configured.",
+                                 QMessageBox::StandardButton::Close };
+        message_box.exec();
+        return;
+    }
+    QString filter{ "Generators (*.gens)" };
+    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+                                                       QDir::currentPath(), filter, &filter)
+                              .toStdU16String();
+    if (filename.empty())
+        return;
+    fs::path path{ filename };
+    const auto ext = path.extension();
+    if (ext != ".gens")
+        path.replace_extension(".gens");
 
-//     QString filter{ "PID binary model (*.pid);;PID text model (*.pidt)" };
-//     const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
-//                                                        QDir::currentPath(), filter, &filter)
-//                               .toStdU16String();
-//     if (filename.empty())
-//         return;
-//     fs::path path{ filename };
-//     const auto ext = path.extension();
-//     if (ext != ".pid" && ext != ".pidt")
-//         path.replace_extension(".pid");
-//     if (filename.back() == u't') {
-//         std::ofstream out{ path, std::ios::out | std::ios::trunc };
-//         out << regulator_opt.value();
-//     } else {
-//         const auto dump = regulator_opt->dump();
-//         std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-//         out.write(reinterpret_cast<const char *>(dump.data()),
-//         static_cast<int64_t>(dump.size())); out.flush();
-//     }
-// }
+    const auto dump = panel_generators->dump();
+    std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+    out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
+    out.flush();
+}
 
 // void MainWindow::import_model()
 // {

@@ -554,3 +554,8 @@ void GeneratorsConfig::reset_sim()
     simulation_time = 0;
     update_sim_time();
 }
+
+std::vector<uint8_t> GeneratorsConfig::dump() const
+{
+    return generator == nullptr ? std::vector<uint8_t>{} : generator->dump();
+}

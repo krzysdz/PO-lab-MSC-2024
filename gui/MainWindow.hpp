@@ -34,7 +34,7 @@ private:
     QMenu *submenu_import;
     QAction *action_exit;
     QAction *action_export_model;
-    QAction *action_export_pid;
+    QAction *action_export_generators;
     QAction *action_import_model;
     QAction *action_import_pid;
     QMenu *menu_edit;
@@ -90,8 +90,8 @@ private:
     void simulate_manual();
     void simulate_gen(std::vector<double> inputs);
 
-    // void export_model();
-    // void export_pid();
+    void export_model();
+    void export_generators();
     // void import_model();
     // void import_pid();
 

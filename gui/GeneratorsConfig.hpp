@@ -77,6 +77,8 @@ private:
 public:
     explicit GeneratorsConfig(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
     void reset_sim();
+    bool empty() const { return generator == nullptr; }
+    std::vector<uint8_t> dump() const;
 
 signals:
     void simulated(std::vector<double> outputs);
