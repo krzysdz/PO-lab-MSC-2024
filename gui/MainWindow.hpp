@@ -22,6 +22,7 @@
 #include <QTabWidget>
 #include <QTreeView>
 #include <QVBoxLayout>
+#include <filesystem>
 #include <optional>
 #include <vector>
 
@@ -33,6 +34,7 @@ private:
     QMenu *submenu_export;
     QMenu *submenu_import;
     QAction *action_exit;
+    QAction *action_open;
     QAction *action_export_model;
     QAction *action_export_generators;
     QAction *action_import_model;
@@ -91,6 +93,9 @@ private:
     void simulate_manual();
     void simulate_gen(std::vector<double> inputs);
 
+    static std::pair<std::unique_ptr<uint8_t[]>, std::size_t>
+    read_file(const std::filesystem::path &path);
+    void open_file();
     void export_model();
     void export_generators();
     void import_model();

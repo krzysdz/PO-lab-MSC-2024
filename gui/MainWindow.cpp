@@ -25,6 +25,10 @@ void MainWindow::prepare_menu_bar()
 {
     menu_file = menuBar()->addMenu("&File");
 
+    action_open = menu_file->addAction("&Open");
+    action_open->setShortcut(QKeySequence::Open);
+    connect(action_open, &QAction::triggered, this, &MainWindow::open_file);
+
     // Export
     submenu_export = menu_file->addMenu("Export");
 
@@ -292,6 +296,42 @@ void MainWindow::simulate_gen(std::vector<double> inputs)
     simulate(inputs);
 }
 
+std::pair<std::unique_ptr<uint8_t[]>, std::size_t>
+MainWindow::read_file(const std::filesystem::path &path)
+{
+    std::ifstream in{ path, std::ios::binary };
+    in.seekg(0, std::ios::end);
+    const auto file_size = in.tellg();
+    in.seekg(0, std::ios::beg);
+    auto buff = std::make_unique_for_overwrite<uint8_t[]>(static_cast<std::size_t>(file_size));
+    in.read(reinterpret_cast<char *>(buff.get()), file_size);
+    in.close();
+    return { std::move(buff), file_size };
+}
+
+void MainWindow::open_file()
+{
+    QString filter{ "All supported files (*.lmod *.gens)" };
+    const auto filename = QFileDialog::getOpenFileName(
+        this, "Select file", QDir::currentPath(),
+        "Loop model (*.lmod);;Generators (*.gens);;All supported files (*.lmod *.gens)", &filter);
+    if (filename.isEmpty())
+        return;
+    const fs::path path{ filename.toStdU16String() };
+    const auto ext = path.extension();
+    if (ext != ".lmod" && ext != ".gens")
+        return;
+    const auto [buff, file_size] = read_file(path);
+    if (ext == ".lmod") {
+        tree_model->begin_reset();
+        loop = PętlaUAR{ std::span(buff.get(), file_size) };
+        tree_model->end_reset();
+        tree_view->expandAll();
+    } else {
+        panel_generators->import(std::span(buff.get(), file_size));
+    }
+}
+
 void MainWindow::export_model()
 {
     QString filter{ "Loop model (*.lmod)" };
@@ -343,15 +383,7 @@ void MainWindow::import_model()
                                                        QDir::currentPath(), "Loop model (*.lmod)");
     if (filename.isEmpty())
         return;
-    const fs::path path{ filename.toStdU16String() };
-    std::ifstream in{ path, std::ios::binary };
-    in.seekg(0, std::ios::end);
-    const auto file_size = in.tellg();
-    in.seekg(0, std::ios::beg);
-    const auto buff
-        = std::make_unique_for_overwrite<uint8_t[]>(static_cast<std::size_t>(file_size));
-    in.read(reinterpret_cast<char *>(buff.get()), file_size);
-    in.close();
+    const auto [buff, file_size] = read_file(filename.toStdU16String());
     tree_model->begin_reset();
     loop = PętlaUAR{ std::span(buff.get(), file_size) };
     tree_model->end_reset();
@@ -364,15 +396,7 @@ void MainWindow::import_generators()
                                                        QDir::currentPath(), "Generators (*.gens)");
     if (filename.isEmpty())
         return;
-    const fs::path path{ filename.toStdU16String() };
-    std::ifstream in{ path, std::ios::binary };
-    in.seekg(0, std::ios::end);
-    const auto file_size = in.tellg();
-    in.seekg(0, std::ios::beg);
-    const auto buff
-        = std::make_unique_for_overwrite<uint8_t[]>(static_cast<std::size_t>(file_size));
-    in.read(reinterpret_cast<char *>(buff.get()), file_size);
-    in.close();
+    const auto [buff, file_size] = read_file(filename.toStdU16String());
     panel_generators->import(std::span(buff.get(), file_size));
 }
 
