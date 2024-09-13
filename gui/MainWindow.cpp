@@ -90,6 +90,9 @@ void MainWindow::prepare_menu_bar()
             [this]() { this->insert_component<UARParams>("New PętlaUAR"); });
 
     // Others
+    action_remove_component = menu_edit->addAction("Remove selected component");
+    connect(action_remove_component, &QAction::triggered, this, &MainWindow::remove_component);
+
     action_reset_sim = menu_edit->addAction("Reset simulation");
     connect(action_reset_sim, &QAction::triggered, this, &MainWindow::reset_sim);
 
@@ -373,6 +376,24 @@ void MainWindow::import_generators()
     panel_generators->import(std::span(buff.get(), file_size));
 }
 
+void MainWindow::remove_component()
+{
+    const auto sel_idx = tree_view->selectionModel()->currentIndex();
+    const auto parent = tree_model->parent(sel_idx);
+    if (!parent.isValid())
+        return;
+    const auto idx_as_loop
+        = dynamic_cast<PętlaUAR *>(static_cast<ObiektSISO *>(sel_idx.internalPointer()));
+    const auto has_children = idx_as_loop && idx_as_loop->size() > 0;
+    const auto response = QMessageBox::question(
+        this, "Remove component",
+        has_children ? "Do you want to remove the selected component and all of its children?"
+                     : "Do you want to remove the selected component?");
+    if (response == QMessageBox::StandardButton::Yes) {
+        tree_model->removeRow(parent, sel_idx.row());
+    }
+}
+
 void MainWindow::change_active_editor(const QModelIndex &index)
 {
     if (!index.isValid()) {
@@ -407,12 +428,14 @@ void MainWindow::update_tree_actions(const QModelIndex &index)
     if (!index.isValid()) {
         submenu_append_child->setEnabled(false);
         submenu_insert_component->setEnabled(false);
+        action_remove_component->setEnabled(false);
         return;
     }
     submenu_append_child->setEnabled(
         dynamic_cast<PętlaUAR *>(static_cast<ObiektSISO *>(index.internalPointer())) != nullptr);
-    const auto parent = tree_model->parent(index);
-    submenu_insert_component->setEnabled(parent.isValid());
+    const auto parent_is_valid = tree_model->parent(index).isValid();
+    submenu_insert_component->setEnabled(parent_is_valid);
+    action_remove_component->setEnabled(parent_is_valid);
 }
 
 void MainWindow::on_tree_selection_change()

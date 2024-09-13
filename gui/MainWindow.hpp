@@ -48,6 +48,7 @@ private:
     QAction *action_insert_ARX;
     QAction *action_insert_PID;
     QAction *action_insert_static;
+    QAction *action_remove_component;
     QAction *action_reset_sim;
     QAction *action_reset_sim_gen;
     QWidget *widget_right;
@@ -95,6 +96,7 @@ private:
     void import_model();
     void import_generators();
 
+    void remove_component();
     template <typename E>
         requires ParamEditor<E, typename E::ObjectT>
     void insert_component(const QString &title, bool append = false)
@@ -114,6 +116,8 @@ private:
             tree_model->appendChild(insertion_parent, std::move(component));
         else
             tree_model->insertChild(insertion_parent, index.row(), std::move(component));
+        // Make sure that the new component is visible
+        tree_view->expand(insertion_parent);
     }
 
     void change_active_editor(const QModelIndex &index);
