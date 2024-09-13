@@ -76,8 +76,7 @@ std::string GeneratorsConfig::edit_base()
             generator = std::make_unique<GeneratorBaza>(a, ts, te);
             set_initialized(true);
         }
-        return std::format("Base [V={}{}]", a,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return base ? base->as_string() : generator->as_string();
     }
     return {};
 }
@@ -130,8 +129,7 @@ std::string GeneratorsConfig::add_sin(Generator *_existing)
         } else {
             generator = std::make_unique<GeneratorSinus>(std::move(generator), a, p, ts, te);
         }
-        return std::format("Sine [A={} T={}{}]", a, p,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return existing ? existing->as_string() : generator->as_string();
     }
     return {};
 }
@@ -192,8 +190,7 @@ std::string GeneratorsConfig::add_pwm(Generator *_existing)
         } else {
             generator = std::make_unique<GeneratorProstokat>(std::move(generator), a, p, d, ts, te);
         }
-        return std::format("Rectangular [A={} T={} D={}% {}]", a, p, d * 100,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return existing ? existing->as_string() : generator->as_string();
     }
     return {};
 }
@@ -246,8 +243,7 @@ std::string GeneratorsConfig::add_saw(Generator *_existing)
         } else {
             generator = std::make_unique<GeneratorSawtooth>(std::move(generator), a, p, ts, te);
         }
-        return std::format("Sawtooth [A={} T={}{}]", a, p,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return existing ? existing->as_string() : generator->as_string();
     }
     return {};
 }
@@ -292,8 +288,7 @@ std::string GeneratorsConfig::add_uniform(Generator *_existing)
         } else {
             generator = std::make_unique<GeneratorUniformNoise>(std::move(generator), a, ts, te);
         }
-        return std::format("Uniform noise [A={}{}]", a,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return existing ? existing->as_string() : generator->as_string();
     }
     return {};
 }
@@ -344,10 +339,41 @@ std::string GeneratorsConfig::add_normal(Generator *_existing)
         } else {
             generator = std::make_unique<GeneratorNormalNoise>(std::move(generator), m, sd, ts, te);
         }
-        return std::format("Normal noise [M={} σ={}{}]", m, sd,
-                           ts == 0 && te == 0 ? "" : std::format(" <{}-{}>", ts, te));
+        return existing ? existing->as_string() : generator->as_string();
     }
     return {};
+}
+
+void GeneratorsConfig::recreate_list()
+{
+    std::vector<std::pair<std::string, QString>> options;
+    QString name;
+    auto g = generator.get();
+    do {
+        if (dynamic_cast<GeneratorNormalNoise *>(g))
+            name = "Normal noise";
+        else if (dynamic_cast<GeneratorUniformNoise *>(g))
+            name = "Uniform noise";
+        else if (dynamic_cast<GeneratorSawtooth *>(g))
+            name = "Sawtooth";
+        else if (dynamic_cast<GeneratorProstokat *>(g))
+            name = "Rectangular";
+        else if (dynamic_cast<GeneratorSinus *>(g))
+            name = "Sine";
+        else if (dynamic_cast<GeneratorBaza *>(g))
+            name = "Base";
+        options.emplace_back(g->as_string(), name);
+        auto as_dec = dynamic_cast<GeneratorDecor *>(g);
+        if (as_dec == nullptr)
+            break;
+        g = as_dec->m_base.get();
+    } while (g != nullptr);
+    combo_edit->clear();
+    for (auto it = options.crbegin(); it != options.crend(); ++it) {
+        auto [label, t] = *it;
+        combo_edit->addItem(QString::fromStdString(label), t);
+    }
+    combo_edit->setCurrentIndex(combo_edit->count() - 1);
 }
 
 void GeneratorsConfig::prepare_layout()

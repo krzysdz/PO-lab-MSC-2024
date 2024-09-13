@@ -151,3 +151,7 @@ bool TreeModel::removeRow(const QModelIndex &parent, int position)
     endRemoveRows();
     return true;
 }
+
+void TreeModel::begin_reset() { beginResetModel(); }
+
+void TreeModel::end_reset() { endResetModel(); }

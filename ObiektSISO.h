@@ -33,9 +33,10 @@ public:
     {
         for (const auto &[name, factory] : siso_serializers) {
 #if __cpp_lib_ranges_starts_ends_with >= 202106L
-            if (std::ranges::starts_with(serialized, name))
+            if (std::ranges::starts_with(serialized | std::views::drop(sizeof(uint32_t)), name))
 #else
-            if (std::ranges::mismatch(serialized, name).in2 == std::ranges::end(name))
+            if (std::ranges::mismatch(serialized | std::views::drop(sizeof(uint32_t)), name).in2
+                == std::ranges::end(name))
 #endif
                 return factory(serialized | std::ranges::to<std::vector<uint8_t>>());
         }

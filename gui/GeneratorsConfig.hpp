@@ -62,10 +62,10 @@ private:
     std::string add_saw(Generator *existing);
     std::string add_uniform(Generator *existing);
     std::string add_normal(Generator *existing);
+    void recreate_list();
 
     int simulation_time{};
     std::unique_ptr<Generator> generator{};
-    QStringList configured_generators{};
     std::vector<gen_details> gen_options{
         { "Sine", std::bind_front(&GeneratorsConfig::add_sin, this) },
         { "Rectangular", std::bind_front(&GeneratorsConfig::add_pwm, this) },
@@ -79,6 +79,15 @@ public:
     void reset_sim();
     bool empty() const { return generator == nullptr; }
     std::vector<uint8_t> dump() const;
+    template <std::ranges::input_range T>
+        requires ByteRepr<std::ranges::range_value_t<T>>
+    void import(const T &serialized)
+    {
+        generator = Generator::deserialize(serialized);
+        recreate_list();
+        set_initialized(generator != nullptr);
+        reset_sim();
+    }
 
 signals:
     void simulated(std::vector<double> outputs);

@@ -1,6 +1,7 @@
 #pragma once
 #include "util.hpp"
 #include <cmath>
+#include <format>
 #include <functional>
 #include <memory>
 #include <numbers>
@@ -103,6 +104,7 @@ public:
         }
         return concat_iterables(amplitude_dump, time);
     }
+    constexpr virtual std::string as_string() const { return "Not implemented"; }
     constexpr virtual ~Generator(){};
 
     template <std::ranges::input_range T>
@@ -185,6 +187,12 @@ public:
     {
         return concat_iterables(range_to_bytes(unique_name), Generator::dump());
     }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Base [V={}{}]", m_amplitude,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
+    }
 
     friend bool operator==(const GeneratorBaza &a, const GeneratorBaza &b)
     {
@@ -257,6 +265,12 @@ public:
     {
         return concat_iterables(range_to_bytes(unique_name), GeneratorPeriodic::dump());
     }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Sine [A={} T={}{}]", m_amplitude, m_period,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
+    }
 
     friend bool operator==(const GeneratorSinus &a, const GeneratorSinus &b) { return a.eq(b); }
 };
@@ -319,6 +333,12 @@ public:
         return concat_iterables(range_to_bytes(unique_name), to_bytes(m_duty_cycle),
                                 GeneratorPeriodic::dump());
     }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Rectangular [A={} T={} D={}%{}]", m_amplitude, m_period, m_duty_cycle * 100,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
+    }
 
     friend bool operator==(const GeneratorProstokat &a, const GeneratorProstokat &b)
     {
@@ -354,6 +374,12 @@ public:
     constexpr std::vector<uint8_t> dump() const override
     {
         return concat_iterables(range_to_bytes(unique_name), GeneratorPeriodic::dump());
+    }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Sawtooth [A={} T={}{}]", m_amplitude, m_period,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
     }
 
     friend bool operator==(const GeneratorSawtooth &a, const GeneratorSawtooth &b)
@@ -406,6 +432,12 @@ public:
     constexpr std::vector<uint8_t> dump() const override
     {
         return concat_iterables(range_to_bytes(unique_name), GeneratorDecor::dump());
+    }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Uniform noise [A={}{}]", m_amplitude,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
     }
 
     friend bool operator==(const GeneratorUniformNoise &a, const GeneratorUniformNoise &b)
@@ -462,6 +494,12 @@ public:
     {
         return concat_iterables(range_to_bytes(unique_name), to_bytes(m_stddev),
                                 GeneratorDecor::dump());
+    }
+    constexpr std::string as_string() const override
+    {
+        return std::format(
+            "Normal noise [M={} σ={}{}]", m_amplitude, m_stddev,
+            m_t_start == 0 && m_t_end == 0 ? "" : std::format(" <{}-{}>", m_t_start, m_t_end));
     }
 
     friend bool operator==(const GeneratorNormalNoise &a, const GeneratorNormalNoise &b)

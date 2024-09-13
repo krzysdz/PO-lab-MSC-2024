@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <filesystem>
 #include <fstream>
+#include <span>
 
 namespace fs = std::filesystem;
 
@@ -33,14 +34,14 @@ void MainWindow::prepare_menu_bar()
     action_export_generators = submenu_export->addAction("Generators");
     connect(action_export_generators, &QAction::triggered, this, &MainWindow::export_generators);
 
-    // // Import
-    // submenu_import = menu_file->addMenu("Import");
+    // Import
+    submenu_import = menu_file->addMenu("Import");
 
-    // action_import_model = submenu_import->addAction("ARX model");
-    // connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
+    action_import_model = submenu_import->addAction("Loop model");
+    connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
 
-    // action_import_pid = submenu_import->addAction("PID regulator");
-    // connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_pid);
+    action_import_pid = submenu_import->addAction("Generators");
+    connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_generators);
 
     // Others
     action_exit = menu_file->addAction("Exit");
@@ -333,57 +334,44 @@ void MainWindow::export_generators()
     out.flush();
 }
 
-// void MainWindow::import_model()
-// {
-//     const auto filename = QFileDialog::getOpenFileName(
-//         this, "Select ARX model file", QDir::currentPath(),
-//         "ARX model (*.arx *.arxt);;ARX binary model (*.arx);;ARX text model (*.arxt)");
-//     if (filename.isEmpty())
-//         return;
-//     const fs::path path{ filename.toStdU16String() };
-//     if (filename.back() == u't') {
-//         std::ifstream in{ path };
-//         ModelARX m{ {}, {}, 1 };
-//         in >> m;
-//         model_opt = std::move(m);
-//     } else {
-//         std::ifstream in{ path, std::ios::binary };
-//         in.seekg(0, std::ios::end);
-//         const auto file_size = in.tellg();
-//         in.seekg(0, std::ios::beg);
-//         const auto buff =
-//         std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
-//         in.read(reinterpret_cast<char *>(buff.get()), file_size);
-//         in.close();
-//         model_opt.emplace(buff.get(), buff.get() + file_size);
-//     }
-// }
+void MainWindow::import_model()
+{
+    const auto filename = QFileDialog::getOpenFileName(this, "Select loop model file",
+                                                       QDir::currentPath(), "Loop model (*.lmod)");
+    if (filename.isEmpty())
+        return;
+    const fs::path path{ filename.toStdU16String() };
+    std::ifstream in{ path, std::ios::binary };
+    in.seekg(0, std::ios::end);
+    const auto file_size = in.tellg();
+    in.seekg(0, std::ios::beg);
+    const auto buff
+        = std::make_unique_for_overwrite<uint8_t[]>(static_cast<std::size_t>(file_size));
+    in.read(reinterpret_cast<char *>(buff.get()), file_size);
+    in.close();
+    tree_model->begin_reset();
+    loop = PętlaUAR{ std::span(buff.get(), file_size) };
+    tree_model->end_reset();
+    tree_view->expandAll();
+}
 
-// void MainWindow::import_pid()
-// {
-//     const auto filename = QFileDialog::getOpenFileName(
-//         this, "Select PID regulator file", QDir::currentPath(),
-//         "PID regulator (*.pid *.pidt);;PID binary model (*.pid);;PID text model (*.pidt)");
-//     if (filename.isEmpty())
-//         return;
-//     const fs::path path{ filename.toStdU16String() };
-//     if (filename.back() == u't') {
-//         std::ifstream in{ path };
-//         RegulatorPID pid{ 0 };
-//         in >> pid;
-//         regulator_opt = std::move(pid);
-//     } else {
-//         std::ifstream in{ path, std::ios::binary };
-//         in.seekg(0, std::ios::end);
-//         const auto file_size = in.tellg();
-//         in.seekg(0, std::ios::beg);
-//         const auto buff =
-//         std::make_unique_for_overwrite<uint8_t[]>(static_cast<size_t>(file_size));
-//         in.read(reinterpret_cast<char *>(buff.get()), file_size);
-//         in.close();
-//         regulator_opt.emplace(buff.get(), buff.get() + file_size);
-//     }
-// }
+void MainWindow::import_generators()
+{
+    const auto filename = QFileDialog::getOpenFileName(this, "Select generators file",
+                                                       QDir::currentPath(), "Generators (*.gens)");
+    if (filename.isEmpty())
+        return;
+    const fs::path path{ filename.toStdU16String() };
+    std::ifstream in{ path, std::ios::binary };
+    in.seekg(0, std::ios::end);
+    const auto file_size = in.tellg();
+    in.seekg(0, std::ios::beg);
+    const auto buff
+        = std::make_unique_for_overwrite<uint8_t[]>(static_cast<std::size_t>(file_size));
+    in.read(reinterpret_cast<char *>(buff.get()), file_size);
+    in.close();
+    panel_generators->import(std::span(buff.get(), file_size));
+}
 
 void MainWindow::change_active_editor(const QModelIndex &index)
 {

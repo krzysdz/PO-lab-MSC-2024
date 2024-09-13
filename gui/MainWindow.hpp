@@ -92,8 +92,8 @@ private:
 
     void export_model();
     void export_generators();
-    // void import_model();
-    // void import_pid();
+    void import_model();
+    void import_generators();
 
     template <typename E>
         requires ParamEditor<E, typename E::ObjectT>

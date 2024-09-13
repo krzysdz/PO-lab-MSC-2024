@@ -31,4 +31,7 @@ public:
                      std::unique_ptr<ObiektSISO> &&component);
     bool appendChild(const QModelIndex &parent, std::unique_ptr<ObiektSISO> &&component);
     bool removeRow(const QModelIndex &parent, int position);
+
+    void begin_reset();
+    void end_reset();
 };
