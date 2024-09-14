@@ -51,7 +51,7 @@ void ModelARX::set_transport_delay(const int32_t delay)
     m_delay_mem.resize(m_transport_delay);
 }
 
-inline void ModelARX::set_stddev(const double stddev)
+void ModelARX::set_stddev(const double stddev)
 {
     if (!std::isfinite(stddev) || stddev < 0.0) {
         throw std::runtime_error{ "Standard deviation must be finite and nonnegative" };

@@ -50,6 +50,7 @@ add_executable(LabTests
     generators.cpp
     ModelARX.cpp
     ObiektSISO.cpp
+    PętlaUAR.cpp
     RegulatorPID.cpp
 )
 target_compile_definitions(LabTests PRIVATE LAB_TESTS)

@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
 }
 #else
 #include "ModelARX.h"
+#include "PętlaUAR.hpp"
 #include "RegulatorPID.h"
 #include "feedback_loop.hpp"
 #include "generators.hpp"
@@ -21,6 +22,7 @@ int main()
     Testy_RegulatorPID::run_tests();
     FeedbackTests::run_tests();
     GeneratorTests::run_tests();
+    UARTests::run_tests();
     return 0;
 }
 #endif

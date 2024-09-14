@@ -1,5 +1,9 @@
 #pragma once
+#include "ModelARX.h"
 #include "ObiektSISO.h"
+#include "ObiektStatyczny.hpp"
+#include "RegulatorPID.h"
+#include <cassert>
 #include <memory>
 #include <vector>
 
@@ -121,6 +125,47 @@ public:
         return concat_iterables(len_b, prefix, closed, last, n_elements, elements);
     }
 
+    constexpr friend bool operator==(const PętlaUAR &a, const PętlaUAR &b)
+    {
+        if (a.m_closed != b.m_closed || a.m_prev_result != b.m_prev_result
+            || a.m_loop.size() != b.m_loop.size())
+            return false;
+        for (std::size_t i = 0; i < a.m_loop.size(); ++i) {
+            const ObiektSISO *const ap = a.m_loop[i].get();
+            const ObiektSISO *const bp = b.m_loop[i].get();
+            if (const auto a_pid = dynamic_cast<const RegulatorPID *>(ap)) {
+                const auto b_pid = dynamic_cast<const RegulatorPID *>(bp);
+                if (b_pid == nullptr || *a_pid != *b_pid)
+                    return false;
+            } else if (const auto a_static = dynamic_cast<const ObiektStatyczny *>(ap)) {
+                const auto b_static = dynamic_cast<const ObiektStatyczny *>(bp);
+                if (b_static == nullptr || *a_static != *b_static)
+                    return false;
+            } else if (const auto a_arx = dynamic_cast<const ModelARX *>(ap)) {
+                const auto b_arx = dynamic_cast<const ModelARX *>(bp);
+                if (b_arx == nullptr || *a_arx != *b_arx)
+                    return false;
+            } else if (const auto a_uar = dynamic_cast<const PętlaUAR *>(ap)) {
+                const auto b_uar = dynamic_cast<const PętlaUAR *>(bp);
+                if (b_uar == nullptr || *a_uar != *b_uar)
+                    return false;
+            } else {
+                assert(false);
+            }
+        }
+        return true;
+    }
     friend class TreeModel;
 };
 DESERIALIZABLE_SISO(PętlaUAR);
+
+#ifdef LAB_TESTS
+class UARTests {
+private:
+    static void test_simple_pid_arx();
+    static void test_uar_serialization();
+
+public:
+    static void run_tests();
+};
+#endif
