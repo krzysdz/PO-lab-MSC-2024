@@ -29,6 +29,10 @@ void MainWindow::prepare_menu_bar()
     action_open->setShortcut(QKeySequence::Open);
     connect(action_open, &QAction::triggered, this, &MainWindow::open_file);
 
+    action_save = menu_file->addAction("&Save");
+    action_save->setShortcut(QKeySequence::Save);
+    connect(action_save, &QAction::triggered, this, &MainWindow::save_full_config);
+
     // Export
     submenu_export = menu_file->addMenu("Export");
 
@@ -309,27 +313,72 @@ MainWindow::read_file(const std::filesystem::path &path)
     return { std::move(buff), file_size };
 }
 
+void MainWindow::write_file(const std::filesystem::path &path, const std::vector<uint8_t> &data)
+{
+    std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
+    out.write(reinterpret_cast<const char *>(data.data()), static_cast<int64_t>(data.size()));
+    out.flush();
+}
+
+void MainWindow::replace_loop(PętlaUAR &&l)
+{
+    tree_model->begin_reset();
+    loop = std::move(l);
+    tree_model->end_reset();
+    tree_view->expandAll();
+}
+
 void MainWindow::open_file()
 {
-    QString filter{ "All supported files (*.lmod *.gens)" };
+    QString filter{ "All supported files (*.pocf *.lmod *.gens)" };
     const auto filename = QFileDialog::getOpenFileName(
         this, "Select file", QDir::currentPath(),
-        "Loop model (*.lmod);;Generators (*.gens);;All supported files (*.lmod *.gens)", &filter);
+        "POlabs config file (*.pocf);; Loop model (*.lmod);;Generators (*.gens);;All supported "
+        "files (*.pocf *.lmod *.gens)",
+        &filter);
     if (filename.isEmpty())
         return;
     const fs::path path{ filename.toStdU16String() };
     const auto ext = path.extension();
-    if (ext != ".lmod" && ext != ".gens")
+    if (ext != ".pocf" && ext != ".lmod" && ext != ".gens")
         return;
     const auto [buff, file_size] = read_file(path);
-    if (ext == ".lmod") {
-        tree_model->begin_reset();
-        loop = PętlaUAR{ std::span(buff.get(), file_size) };
-        tree_model->end_reset();
-        tree_view->expandAll();
-    } else {
+    if (ext == ".pocf") {
+        const std::size_t loop_size = sizeof(uint32_t) + *reinterpret_cast<uint32_t *>(buff.get());
+        if (loop_size > file_size)
+            return;
+        PętlaUAR imported_loop{ std::span(buff.get(), loop_size) };
+        const std::size_t gen_size = file_size - loop_size;
+        if (gen_size) {
+            auto imported_gens
+                = Generator::deserialize(std::span(buff.get() + loop_size, gen_size));
+            panel_generators->import(std::move(imported_gens));
+        }
+        replace_loop(std::move(imported_loop));
+    } else if (ext == ".lmod") {
+        replace_loop(PętlaUAR{ std::span(buff.get(), file_size) });
+    } else if (ext == ".gens") {
         panel_generators->import(std::span(buff.get(), file_size));
+    } else {
+        Q_ASSERT(false);
     }
+}
+
+void MainWindow::save_full_config()
+{
+    QString filter{ "POlabs config file (*.pocf)" };
+    const auto filename = QFileDialog::getSaveFileName(this, "Choose a filename to export to",
+                                                       QDir::currentPath(), filter, &filter)
+                              .toStdU16String();
+    if (filename.empty())
+        return;
+    fs::path path{ filename };
+    const auto ext = path.extension();
+    if (ext != ".pocf")
+        path.replace_extension(".pocf");
+
+    const auto dump = concat_iterables(loop.dump(), panel_generators->dump());
+    write_file(path, dump);
 }
 
 void MainWindow::export_model()
@@ -345,10 +394,7 @@ void MainWindow::export_model()
     if (ext != ".lmod")
         path.replace_extension(".lmod");
 
-    const auto dump = loop.dump();
-    std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-    out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-    out.flush();
+    write_file(path, loop.dump());
 }
 
 void MainWindow::export_generators()
@@ -371,10 +417,7 @@ void MainWindow::export_generators()
     if (ext != ".gens")
         path.replace_extension(".gens");
 
-    const auto dump = panel_generators->dump();
-    std::ofstream out{ path, std::ios::out | std::ios::trunc | std::ios::binary };
-    out.write(reinterpret_cast<const char *>(dump.data()), static_cast<int64_t>(dump.size()));
-    out.flush();
+    write_file(path, panel_generators->dump());
 }
 
 void MainWindow::import_model()
@@ -384,10 +427,7 @@ void MainWindow::import_model()
     if (filename.isEmpty())
         return;
     const auto [buff, file_size] = read_file(filename.toStdU16String());
-    tree_model->begin_reset();
-    loop = PętlaUAR{ std::span(buff.get(), file_size) };
-    tree_model->end_reset();
-    tree_view->expandAll();
+    replace_loop(PętlaUAR{ std::span(buff.get(), file_size) });
 }
 
 void MainWindow::import_generators()

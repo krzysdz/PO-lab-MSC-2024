@@ -585,3 +585,11 @@ std::vector<uint8_t> GeneratorsConfig::dump() const
 {
     return generator == nullptr ? std::vector<uint8_t>{} : generator->dump();
 }
+
+void GeneratorsConfig::import(std::unique_ptr<Generator> &&gen)
+{
+    generator = std::move(gen);
+    recreate_list();
+    set_initialized(generator != nullptr);
+    reset_sim();
+}

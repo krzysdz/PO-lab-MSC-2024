@@ -83,11 +83,9 @@ public:
         requires ByteRepr<std::ranges::range_value_t<T>>
     void import(const T &serialized)
     {
-        generator = Generator::deserialize(serialized);
-        recreate_list();
-        set_initialized(generator != nullptr);
-        reset_sim();
+        import(Generator::deserialize(serialized));
     }
+    void import(std::unique_ptr<Generator> &&gen);
 
 signals:
     void simulated(std::vector<double> outputs);

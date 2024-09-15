@@ -35,6 +35,7 @@ private:
     QMenu *submenu_import;
     QAction *action_exit;
     QAction *action_open;
+    QAction *action_save;
     QAction *action_export_model;
     QAction *action_export_generators;
     QAction *action_import_model;
@@ -95,7 +96,10 @@ private:
 
     static std::pair<std::unique_ptr<uint8_t[]>, std::size_t>
     read_file(const std::filesystem::path &path);
+    void write_file(const std::filesystem::path &path, const std::vector<uint8_t> &data);
+    void replace_loop(PętlaUAR &&l);
     void open_file();
+    void save_full_config();
     void export_model();
     void export_generators();
     void import_model();
