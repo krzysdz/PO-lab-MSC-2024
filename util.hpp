@@ -4,6 +4,7 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <ostream>
@@ -20,7 +21,7 @@ template <typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
 template <typename B>
-concept ByteRepr = std::is_same_v<B, unsigned char> || std::is_same_v<B, std::byte>;
+concept ByteRepr = std::same_as<B, unsigned char> || std::same_as<B, std::byte>;
 
 template <typename T>
 concept Streamable = requires(std::ostream &os, T val) { os << val; };
@@ -45,20 +46,16 @@ concept RangeComparable = requires(Pred pred, A a, B b) {
     { std::ranges::equal(a, b, pred) } -> std::convertible_to<bool>;
 };
 
-template <typename> struct is_std_array : std::false_type { };
-template <typename T, std::size_t N> struct is_std_array<std::array<T, N>> : std::true_type { };
-template <typename T> constexpr bool is_std_array_v = is_std_array<T>::value;
-
-template <typename T, typename Enable = void> struct has_arithmetic_value : std::false_type { };
 template <typename T>
-struct has_arithmetic_value<T, std::enable_if_t<std::is_arithmetic_v<typename T::value_type>>>
-    : std::true_type { };
-template <typename T> constexpr bool has_arithmetic_value_v = has_arithmetic_value<T>::value;
+concept IsStdArray = std::same_as<T, std::array<typename T::value_type, sizeof(T)>>;
 
 template <typename T>
-constexpr bool biendian_serializable_v = std::is_arithmetic_v<T>
-    || (std::is_bounded_array_v<T> && std::is_arithmetic_v<std::remove_extent_t<T>>)
-    || (is_std_array_v<T> && has_arithmetic_value_v<T>);
+concept HasArithmeticValue = Arithmetic<typename T::value_type>;
+
+template <typename T>
+concept BiendianSerializable
+    = Arithmetic<T> || (std::is_bounded_array_v<T> && Arithmetic<std::remove_extent_t<T>>)
+    || (IsStdArray<T> && HasArithmeticValue<T>);
 
 constexpr uint8_t operator"" _u8(unsigned long long a) noexcept { return static_cast<uint8_t>(a); }
 
@@ -81,7 +78,7 @@ template <TriviallyCopyable T, ByteRepr B = std::uint8_t>
 constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
 {
     mixed_endianness_check();
-    static_assert(biendian_serializable_v<T> || std::endian::native == std::endian::little,
+    static_assert(BiendianSerializable<T> || std::endian::native == std::endian::little,
                   "Only little-endian architecture is supported for non-arithmetic types");
     static_assert(!std::same_as<T, std::string_view>,
                   "string_view is a pointer-length pair, not data");
@@ -91,7 +88,7 @@ constexpr std::array<B, sizeof(T)> to_bytes(const T &data) noexcept
         auto as_arr = std::to_array(data);
         return to_bytes<decltype(as_arr), B>(as_arr);
     }
-    if constexpr (is_std_array_v<T>) {
+    if constexpr (IsStdArray<T>) {
         std::array<B, sizeof(T)> result;
         auto output_iter = result.begin();
         for (std::size_t i = 0; i < data.size(); ++i) {
