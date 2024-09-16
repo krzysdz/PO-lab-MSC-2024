@@ -16,15 +16,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Enable ASAN (and other sanitizers) in Debug builds
-if (MSVC)
-    add_compile_options("$<$<CONFIG:DEBUG>:/fsanitize=address>")
-else()
-    add_compile_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>" "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>")
-    add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
-endif()
-
-find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Charts Test)
 qt_standard_project_setup()
 
 qt_add_executable(POlabs
@@ -40,7 +32,15 @@ qt_add_executable(POlabs
     PętlaUAR.cpp
 )
 
-target_link_libraries(POlabs PRIVATE Qt6::Widgets Qt6::Charts)
+# Enable ASAN (and other sanitizers) in Debug builds
+if (MSVC)
+    target_compile_options(POlabs PRIVATE "$<$<CONFIG:DEBUG>:/fsanitize=address>")
+else()
+    target_compile_options(POlabs PRIVATE "$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>" "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>")
+    target_link_options(POlabs PRIVATE "$<$<CONFIG:DEBUG>:-fsanitize=address,undefined,leak>")
+endif()
+
+target_link_libraries(POlabs PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts)
 
 # Tests
 enable_testing()
@@ -63,3 +63,19 @@ else()
 endif()
 add_test(NAME LabTests COMMAND LabTests WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 set_tests_properties(LabTests PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL;INTERUPTED")
+
+qt_add_executable(ImportExportTest
+    tests/import_export_test.cpp
+    gui/MainWindow.cpp
+    gui/GeneratorsConfig.cpp
+    gui/TreeModel.cpp
+    gui/param_editors.cpp
+    RegulatorPID.cpp
+    ObiektSISO.cpp
+    ModelARX.cpp
+    generators.cpp
+    PętlaUAR.cpp
+)
+target_compile_definitions(ImportExportTest PRIVATE IE_TESTS)
+target_link_libraries(ImportExportTest PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Test)
+add_test(NAME ImportExportTest COMMAND ImportExportTest)

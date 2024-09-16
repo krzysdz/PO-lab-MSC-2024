@@ -26,6 +26,10 @@
 #include <optional>
 #include <vector>
 
+#ifdef IE_TESTS
+class ImportExportTest;
+#endif
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -149,4 +153,8 @@ public:
     {
     }
     void start();
+
+#ifdef IE_TESTS
+    friend class ImportExportTest;
+#endif
 };

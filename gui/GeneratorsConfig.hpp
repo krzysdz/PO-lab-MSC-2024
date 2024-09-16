@@ -15,6 +15,10 @@
 #include <functional>
 #include <unordered_map>
 
+#ifdef IE_TESTS
+class ImportExportTest;
+#endif
+
 struct gen_details {
     QString name;
     std::function<std::string(Generator *)> dialog_add;
@@ -90,4 +94,8 @@ public:
 signals:
     void simulated(std::vector<double> outputs);
     void cleared();
+
+#ifdef IE_TESTS
+    friend class ImportExportTest;
+#endif
 };

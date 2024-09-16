@@ -34,6 +34,9 @@
 # Debug info
 *.pdb
 
+# GDB history
+.gdb_history
+
 # Build cache and configuration
 build/
 Testing/
