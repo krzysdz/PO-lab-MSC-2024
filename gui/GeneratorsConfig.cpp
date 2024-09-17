@@ -591,5 +591,6 @@ void GeneratorsConfig::import(std::unique_ptr<Generator> &&gen)
     generator = std::move(gen);
     recreate_list();
     set_initialized(generator != nullptr);
+    action_current_gen_changed();
     reset_sim();
 }

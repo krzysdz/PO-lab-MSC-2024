@@ -84,6 +84,21 @@ private slots:
         QCOMPARE_EQ(conf.combo_edit->currentIndex(), 2);
         QCOMPARE(conf.combo_edit->itemText(2), QString{ "Sine [A=0.64 T=80 <78-1200>]" });
     }
+    void import_generators_base_only()
+    {
+        GeneratorsConfig conf;
+        conf.import(std::make_unique<GeneratorBaza>());
+        QCOMPARE(conf.label_time->text(), QString{ "Simulation time: 0" });
+        QCOMPARE_EQ(conf.combo_edit->isEnabled(), true);
+        QCOMPARE_EQ(conf.button_edit->isEnabled(), true);
+        QCOMPARE_EQ(conf.button_delete->isEnabled(), false);
+        QCOMPARE_EQ(conf.button_simulate->isEnabled(), true);
+        QCOMPARE_GT(conf.combo_add->count(), 1);
+        QCOMPARE_EQ(conf.combo_edit->count(), 1);
+        QCOMPARE_EQ(conf.combo_edit->currentIndex(), 0);
+        QCOMPARE(conf.combo_edit->itemData(0), QString{ "Base" });
+        QCOMPARE(conf.combo_edit->itemText(0), QString{ "Base [V=0]" });
+    }
     void import_loop()
     {
         QSKIP("SIGSEGV in "
