@@ -396,7 +396,7 @@ AUTOLINK_SUPPORT       = YES
 # collaboration diagrams that involve STL classes more complete and accurate.
 # The default value is: NO.
 
-BUILTIN_STL_SUPPORT    = YES
+BUILTIN_STL_SUPPORT    = NO
 
 # If you use Microsoft's C++/CLI language, you should set this option to YES to
 # enable parsing support.
@@ -965,7 +965,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = "C:/Users/krzys/Desktop/Szkoła itp/studia/PO/labs"
+INPUT                  =
 
 # This tag can be used to specify the character encoding of the source files
 # that Doxygen parses. Internally Doxygen uses the UTF-8 encoding. Doxygen uses
@@ -2527,7 +2527,10 @@ SKIP_FUNCTION_MACROS   = YES
 # the path). If a tag file is not located in the directory in which Doxygen is
 # run, you must also specify the path to the tagfile here.
 
-TAGFILES               =
+TAGFILES               = "docs/doxygen/tags/qtcore.tags=https://doc.qt.io/qt-6/" \
+                         "docs/doxygen/tags/qtgui.tags=https://doc.qt.io/qt-6/" \
+                         "docs/doxygen/tags/qtwidgets.tags=https://doc.qt.io/qt-6/" \
+                         "docs/doxygen/tags/libstdc++.tag=https://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen"
 
 # When a file name is specified after GENERATE_TAGFILE, Doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to
@@ -2710,7 +2713,7 @@ DOT_WRAP_THRESHOLD     = 17
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-TEMPLATE_RELATIONS     = NO
+TEMPLATE_RELATIONS     = YES
 
 # If the INCLUDE_GRAPH, ENABLE_PREPROCESSING and SEARCH_INCLUDES tags are set to
 # YES then Doxygen will generate a graph for each documented file showing the
