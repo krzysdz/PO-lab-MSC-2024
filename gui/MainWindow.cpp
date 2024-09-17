@@ -48,8 +48,8 @@ void MainWindow::prepare_menu_bar()
     action_import_model = submenu_import->addAction("Loop model");
     connect(action_import_model, &QAction::triggered, this, &MainWindow::import_model);
 
-    action_import_pid = submenu_import->addAction("Generators");
-    connect(action_import_pid, &QAction::triggered, this, &MainWindow::import_generators);
+    action_import_generators = submenu_import->addAction("Generators");
+    connect(action_import_generators, &QAction::triggered, this, &MainWindow::import_generators);
 
     // Others
     action_exit = menu_file->addAction("Exit");

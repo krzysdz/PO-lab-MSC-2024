@@ -23,11 +23,6 @@ std::optional<QModelIndex> TreeModel::find_idx(PętlaUAR *loop, ObiektSISO *ptr,
     return std::nullopt;
 }
 
-TreeModel::TreeModel(QObject *parent)
-    : QAbstractItemModel{ parent }
-{
-}
-
 TreeModel::TreeModel(PętlaUAR *root_loop, QObject *parent)
     : QAbstractItemModel{ parent }
     , m_root_loop{ root_loop }
