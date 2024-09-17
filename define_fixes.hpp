@@ -1,3 +1,6 @@
+/// @file define_fixes.hpp
+/// @brief C++ standard library checks and workarounds.
+
 #pragma once
 #include <version>
 

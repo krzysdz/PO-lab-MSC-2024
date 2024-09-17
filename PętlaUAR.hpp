@@ -7,18 +7,27 @@
 #include <memory>
 #include <vector>
 
+/// Control loop derived from ObiektSISO
 class PętlaUAR : public ObiektSISO {
 public:
+    /// Unique name/prefix used to distinguish types in deserialization.
     constexpr static std::string_view unique_name{ "UAR" };
 
 private:
+    /// Size of the unique prefix.
     static constexpr std::size_t prefix_size{ unique_name.size()
                                               * sizeof(decltype(unique_name)::value_type) };
 
+    /// Vector of the loop's components.
     std::vector<std::unique_ptr<ObiektSISO>> m_loop{};
+    /// Whether the loop is closed and forms a feedback loop.
     bool m_closed;
+    /// Stored previous simulation result.
     double m_prev_result;
 
+    /// @brief Check if pointer is not `nullptr`.
+    /// @param ptr reference to unique pointer to check
+    /// @throws `std::runtime_error` if the pointer in `nullptr`
     constexpr static void check_ptr(const std::unique_ptr<ObiektSISO> &ptr)
     {
         if (ptr == nullptr)
@@ -26,11 +35,19 @@ private:
     }
 
 public:
+    /// @brief Regular constructor accepting basic loop parameters (closed and initial value);
+    /// default constructor
+    /// @param closed whether the loop is closed and should form a feedback loop
+    /// @param init_val initial value of saved previous result; used to calculate initial feedback
+    /// in closed loop
     constexpr PętlaUAR(bool closed = true, double init_val = 0.0)
         : m_closed{ closed }
         , m_prev_result{ init_val }
     {
     }
+    /// @brief Deserializing constructor for an input range of bytes
+    /// @tparam T type of the input range
+    /// @param serialized input range over bytes representing serialized PętlaUAR
     template <std::ranges::input_range T>
         requires ByteRepr<std::ranges::range_value_t<T>>
     PętlaUAR(const T &serialized)
@@ -67,25 +84,57 @@ public:
             drop_c += sizeof(uint32_t) + l;
         }
     }
+    /// @brief Reset the previous result and call @link ObiektSISO::reset() reset()@endlink on all
+    /// components.
+    /// @param init_val the new value of saved previous result
     void reset(double init_val);
+    /// @brief Set the previous result to `0` and call @link ObiektSISO::reset() reset()@endlink on
+    /// all components.
     void reset() override { reset(0.0); };
+    /// @brief Simulate loop's response to the input signal.
+    ///
+    /// If the loop is closed (default) the first component receives the error signal, which is the
+    /// difference between `u` and #m_prev_result. In open loop the input to the first component is
+    /// simply `u`. Subsequent componets process outputs from their predecesors.<br>
+    /// Output of the last component is saved as #m_prev_result and returned.
+    ///
+    /// Simulation uses ObiektSISO::symuluj() method of the components.
+    ///
+    /// @param u loop's input, the setpoint in closed loop
+    /// @return response from the last loop component
     double symuluj(double u) override;
+    /// Remove all componets.
     constexpr void clear() noexcept { m_loop.clear(); }
+    /// @brief Get size of the loop.
+    /// @return Number of components in the loop
     constexpr std::size_t size() const noexcept { return m_loop.size(); }
+    /// Last result (#m_prev_result) getter.
     constexpr double get_last_result() const noexcept { return m_prev_result; }
+    /// Closed setting (#m_closed) getter.
     constexpr bool get_closed() const noexcept { return m_closed; }
+    /// Last result (#m_prev_result) setter.
     constexpr void set_init(double init_val) noexcept { m_prev_result = init_val; }
+    /// Closed setting (#m_closed) setter.
     constexpr void set_closed(bool closed) noexcept { m_closed = closed; }
+    /// @brief Append component to the loop.
+    /// @param element the component to append at the back
     constexpr void push_back(std::unique_ptr<ObiektSISO> &&element)
     {
         check_ptr(element);
         m_loop.push_back(std::move(element));
     }
+    /// @brief Append component to the loop and return its position.
+    /// @param value the component to append at the back
+    /// @return Index of the appended component (size of the loop - 1).
     constexpr std::size_t insert(std::unique_ptr<ObiektSISO> &&value)
     {
         push_back(std::move(value));
         return m_loop.size() - 1;
     }
+    /// @brief Insert component at given index.
+    /// @param index position at which the component should be inserted
+    /// @param value the component to be inserted
+    /// @return Index of the inserted component.
     constexpr std::size_t insert(std::size_t index, std::unique_ptr<ObiektSISO> &&value)
     {
         check_ptr(value);
@@ -93,6 +142,12 @@ public:
         const auto oit = m_loop.insert(it, std::move(value));
         return static_cast<std::size_t>(std::distance(m_loop.begin(), oit));
     }
+    /// @brief Insert multiple components starting at given index.
+    /// @tparam ...Args type of components (must be convertible to std::unique_ptr<ObiektSISO>)
+    /// @param index position at which the first of components should be inserted
+    /// @param value first component to be inserted
+    /// @param ...args remaining components to be inserted
+    /// @return Index of the last inserted component.
     template <typename... Args>
     constexpr std::size_t insert(std::size_t index, std::unique_ptr<ObiektSISO> &&value,
                                  Args &&...args)
@@ -103,6 +158,10 @@ public:
         }
         return ins_idx;
     }
+    /// @brief Remove component at given index.
+    /// @param index index of the element to be removed
+    /// @return Index of the next element after erasing.
+    /// @throws `std::range_error` if index is not less than the loop size
     constexpr std::size_t erase(std::size_t index)
     {
         if (index >= m_loop.size())
@@ -125,6 +184,8 @@ public:
         return concat_iterables(len_b, prefix, closed, last, n_elements, elements);
     }
 
+    /// @brief Overloaded equal comparison operator, which compares all parameters and checks if
+    /// loop has the same types of components, which also compare equal.
     constexpr friend bool operator==(const PętlaUAR &a, const PętlaUAR &b)
     {
         if (a.m_closed != b.m_closed || a.m_prev_result != b.m_prev_result

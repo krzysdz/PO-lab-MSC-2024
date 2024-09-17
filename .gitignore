@@ -51,3 +51,6 @@ Testing/
 
 # LibreOffice lock files
 .~lock*#
+
+# Doxygen output
+/docs/doxygen/

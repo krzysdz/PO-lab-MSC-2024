@@ -20,7 +20,7 @@ double PętlaUAR::symuluj(double u)
 #ifdef LAB_TESTS
 void UARTests::test_simple_pid_arx()
 {
-    std::cout << "Simple loop with PI regulator and ARX model: ";
+    std::cerr << "Simple loop with PI regulator and ARX model: ";
     PętlaUAR loop;
     loop.push_back(std::make_unique<RegulatorPID>(0.4, 2.0));
     loop.push_back(std::make_unique<ModelARX>(std::vector{ -0.4 }, std::vector{ 0.6 }, 1));
@@ -29,8 +29,8 @@ void UARTests::test_simple_pid_arx()
     // > converted to a prvalue of type bool. A zero value, null pointer value, or null member
     // > pointer value is converted to false; any other value is converted to true.
     for (std::size_t i = 0; i < 30; ++i)
-        std::cout << loop.symuluj(static_cast<double>(i != 0)) << ' ';
-    std::cout << std::endl;
+        std::cerr << loop.symuluj(static_cast<double>(i != 0)) << ' ';
+    std::cerr << std::endl;
 }
 
 void UARTests::test_uar_serialization()
