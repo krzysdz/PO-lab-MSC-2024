@@ -55,9 +55,8 @@ private slots:
                 0x67, 0x2a, 0xb1, 0x69, 0xd3, 0xe6, 0x6c, 0x26, 0x4c, 0x51, 0x6a, 0x56, 0x7e, 0x8c,
                 0xbf, 0x53, 0x57, 0x86, 0x42, 0x2d, 0x7c, 0x10, 0x5e, 0x9e, 0x23, 0x50, 0x80, 0x62,
                 0xa9, 0xf1, 0xf9, 0xc1, 0x31, 0x7,  0xcd, 0xbd, 0x1f, 0x64, 0xd4, 0xa4 };
-        MainWindow main_window;
-        main_window.write_file(path, data);
-        const auto [read_data, file_size] = main_window.read_file(path);
+        MainWindow::write_file(path, data);
+        const auto [read_data, file_size] = MainWindow::read_file(path);
         QCOMPARE_EQ(file_size, data.size());
         QVERIFY2(std::ranges::equal(std::span{ read_data.get(), file_size }, data),
                  "Data read from file is different from data which should be written.");
@@ -101,10 +100,6 @@ private slots:
     }
     void import_loop()
     {
-        QSKIP("SIGSEGV in "
-              "`QAbstractItemModel::modelAboutToBeReset(QAbstractItemModel::QPrivateSignal)`, "
-              "`sender` in `void doActivate<false>(QObject*, int, void**)` is `nullptr` or e.g. "
-              "0x100000000, 0x130303030");
         using p = ObiektStatyczny::point;
 
         PętlaUAR loop;
@@ -116,10 +111,31 @@ private slots:
             std::make_unique<ModelARX>(std::vector{ 1.0, 2.0 }, std::vector{ 0.5, -4.26 }, 2));
 
         MainWindow main_window;
+        // Don't forget to initialize the UI before using it
+        main_window.setup_ui();
+
         main_window.replace_loop(std::move(loop));
-        const QModelIndex root_idx = main_window.tree_view->rootIndex();
-        const QModelIndex first_row = main_window.tree_view->indexBelow(root_idx);
-        QCOMPARE(main_window.tree_view->model()->data(first_row), "PętlaUAR");
+
+        const QModelIndex root_idx = main_window.tree_view->model()->index(0, 0);
+        QCOMPARE(main_window.tree_view->model()->data(root_idx), QString{ "PętlaUAR" });
+        QCOMPARE_EQ(main_window.tree_view->isExpanded(root_idx), true);
+
+        const QModelIndex row_1 = main_window.tree_view->indexBelow(root_idx);
+        QCOMPARE(main_window.tree_view->model()->data(row_1), QString{ "RegulatorPID" });
+        QCOMPARE(row_1.parent(), root_idx);
+
+        const QModelIndex row_2 = main_window.tree_view->indexBelow(row_1);
+        QCOMPARE(main_window.tree_view->model()->data(row_2), QString{ "PętlaUAR" });
+        QCOMPARE_EQ(main_window.tree_view->isExpanded(row_2), true);
+        QCOMPARE(row_2.parent(), root_idx);
+
+        const QModelIndex row_3 = main_window.tree_view->indexBelow(row_2);
+        QCOMPARE(main_window.tree_view->model()->data(row_3), QString{ "ObiektStatyczny" });
+        QCOMPARE(row_3.parent(), row_2);
+
+        const QModelIndex row_4 = main_window.tree_view->indexBelow(row_3);
+        QCOMPARE(main_window.tree_view->model()->data(row_4), QString{ "ModelARX" });
+        QCOMPARE(row_4.parent(), root_idx);
     }
 };
 
